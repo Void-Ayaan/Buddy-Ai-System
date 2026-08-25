@@ -216,7 +216,7 @@
 </head>
 <body>
 
-    <!-- INCOMING CALL SCREEN -->
+    <!-- INCOMING PHONE CALL OVERLAY SCREEN -->
     <div class="incoming-call-overlay" id="incomingOverlay" style="display: none;">
         <div style="text-align: center;">
             <div class="incoming-avatar"></div>
@@ -232,7 +232,7 @@
 
     <div>
         <div class="header-title">BUDDY AI VOICE PHONE CALL</div>
-        <div class="call-status" id="callStatus">CONNECTED • AUDIO-ONLY STREAM</div>
+        <div class="call-status" id="callStatus">CONNECTED • STANDBY MODE</div>
         <div class="call-timer" id="timer">00:00</div>
     </div>
 
@@ -242,7 +242,7 @@
     </div>
 
     <div class="speech-transcript" id="transcript">
-        Tap "TALK TO BUDDY" or tap the central orb to speak...
+        Buddy Voice Standby Active. Say "connect to mobile for audio" on PC to ring your phone!
     </div>
 
     <div class="controls-row">
@@ -255,17 +255,80 @@
     </div>
 
     <script>
+        let audioCtx = null;
+        let ringInterval = null;
+
+        // Web Audio Synthesizer Ringtone Generator (440Hz + 480Hz dual US telephone ring frequency)
+        function playTelephoneRingtone() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const playRingBurst = () => {
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc1.frequency.value = 440; // 440 Hz
+                    osc2.frequency.value = 480; // 480 Hz
+
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.8);
+
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc1.start();
+                    osc2.start();
+                    osc1.stop(audioCtx.currentTime + 1.8);
+                    osc2.stop(audioCtx.currentTime + 1.8);
+                };
+
+                playRingBurst();
+                ringInterval = setInterval(playRingBurst, 3000);
+            } catch(e) {}
+        }
+
+        function stopTelephoneRingtone() {
+            if (ringInterval) {
+                clearInterval(ringInterval);
+                ringInterval = null;
+            }
+        }
+
+        function triggerIncomingPhoneCall() {
+            document.getElementById('incomingOverlay').style.display = 'flex';
+            playTelephoneRingtone();
+
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('BUDDY AI INCOMING PHONE CALL', {
+                    body: 'Incoming Audio Call from Buddy AI Swarm. Tap to answer!',
+                    icon: '/camera_view.jpg'
+                });
+            }
+        }
+
+        // Auto-request Notification permission on first touch
+        document.body.addEventListener('click', () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }, { once: true });
+
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('autocall') === 'true') {
-            document.getElementById('incomingOverlay').style.display = 'flex';
+            triggerIncomingPhoneCall();
         }
 
         function acceptCall() {
+            stopTelephoneRingtone();
             document.getElementById('incomingOverlay').style.display = 'none';
             speakPhoneOutput("Hello Boss! I am online on your phone call bridge. How can I assist you today?");
         }
 
         function declineCall() {
+            stopTelephoneRingtone();
             document.getElementById('incomingOverlay').style.display = 'none';
         }
 
@@ -278,7 +341,6 @@
         }, 1000);
 
         let recognition = null;
-        let isSpeaking = false;
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -300,7 +362,7 @@
             };
 
             recognition.onerror = () => {
-                document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO-ONLY STREAM';
+                document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO STREAM';
                 document.getElementById('callStatus').style.color = '#ffb700';
                 document.getElementById('orb').style.transform = 'scale(1.0)';
             };
@@ -337,7 +399,7 @@
                 };
 
                 utterance.onend = () => {
-                    document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO-ONLY STREAM';
+                    document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO STREAM';
                     document.getElementById('callStatus').style.color = '#ffb700';
                     document.getElementById('orb').style.transform = 'scale(1.0)';
                 };
@@ -363,6 +425,7 @@
         }
 
         function endPhoneCall() {
+            stopTelephoneRingtone();
             clearInterval(timerInterval);
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             document.body.innerHTML = `
@@ -373,6 +436,24 @@
                 </div>
             `;
         }
+
+        // Live Auto-Ring Socket Listener
+        let lastSyncLogCount = 0;
+        setInterval(() => {
+            fetch('/api/sync_logs')
+            .then(res => res.json())
+            .then(data => {
+                if (data.logs && data.logs.length > lastSyncLogCount) {
+                    const latest = data.logs[data.logs.length - 1];
+                    const cmd = (latest.command || '').toLowerCase();
+                    if (cmd.includes('connect to mobile for audio') || cmd.includes('call my phone') || cmd.includes('mobile call')) {
+                        triggerIncomingPhoneCall();
+                    }
+                    lastSyncLogCount = data.logs.length;
+                }
+            })
+            .catch(err => {});
+        }, 2000);
     </script>
 </body>
 </html>
