@@ -1,0 +1,31 @@
+# Large Binaries & Local Models (Over 100MB - Too large for GitHub)
+llamafile.exe
+*.exe
+models/*.gguf
+models/*.bin
+*.gguf
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Bytecode & Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Temporary Files & Camera Snapshots
+memory/camera_view.jpg
+ui/camera_view.jpg
+scratch/
+*.log
+*.tmp
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini

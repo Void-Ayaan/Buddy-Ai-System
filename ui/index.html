@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUDDY 3D HUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-obsidian: #000000;
+            --cyan-core: #00f3ff;
+            --cyan-glow: rgba(0, 243, 255, 0.45);
+            --amber-warn: #ffb700;
+            --silver-main: #d0e2f5;
+            --silver-dim: #4a6380;
+        }
+
+        /* DYNAMIC THEMES */
+        body.theme-amber {
+            --cyan-core: #ffb700;
+            --cyan-glow: rgba(255, 183, 0, 0.45);
+        }
+
+        body.theme-emerald {
+            --cyan-core: #00ff9d;
+            --cyan-glow: rgba(0, 255, 157, 0.45);
+        }
+
+        body.theme-violet {
+            --cyan-core: #b026ff;
+            --cyan-glow: rgba(176, 38, 255, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #000000;
+            color: var(--silver-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        /* FULL-SCREEN CENTRALIZED BACKGROUND SWARM CANVAS (NON-RESPONSIVE TO MOUSE) */
+        canvas#bgSwarmCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            background: #000000;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 28px;
+            background: transparent;
+            position: relative;
+            z-index: 2;
+            flex-shrink: 0;
+        }
+
+        .hud-brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--cyan-core);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 16px var(--cyan-glow);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .dock-toggle-btn {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--cyan-core);
+            border-radius: 4px;
+            color: var(--cyan-core);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 6px 14px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+        }
+
+        .dock-toggle-btn:hover {
+            background: var(--cyan-core);
+            color: #000;
+            box-shadow: 0 0 12px var(--cyan-core);
+        }
+
+        .theme-btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .theme-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.2s;
+        }
+
+        .theme-dot:hover { transform: scale(1.3); }
+
+        .status-strip {
+            display: flex;
+            gap: 20px;
+            font-size: 11px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--silver-dim);
+        }
+
+        .status-node { display: flex; align-items: center; gap: 6px; }
+        .status-val { color: var(--cyan-core); font-weight: bold; }
+
+        .hud-stage {
+            display: grid;
+            grid-template-columns: 290px 1fr 310px;
+            gap: 24px;
+            padding: 10px 28px 24px 28px;
+            flex: 1;
+            height: calc(100vh - 65px);
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            transition: all 0.4s ease;
+        }
+
+        /* COMPACT CORNER VISUAL WIDGET MODE */
+        body.compact-mode .hud-stage {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        body.compact-mode .hud-panel:nth-child(1),
+        body.compact-mode .hud-panel:nth-child(3),
+        body.compact-mode .log-terminal,
+        body.compact-mode .hud-input-row {
+            display: none !important;
+        }
+
+        body.compact-mode .hud-panel.center-hud {
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* FRAMELESS UN-CAGED STATIC PANELS */
+        .hud-panel {
+            background: transparent;
+            border: none;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .panel-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--cyan-core);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0.9;
+            flex-shrink: 0;
+        }
+
+        /* CENTER HUD: ANCHORED AT BOTTOM NEXT TO INPUT BOX TO LEAVE TOP OPEN & CLEAN */
+        .center-hud {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .audio-waveform {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 16px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .wave-bar {
+            width: 4px;
+            background: var(--cyan-core);
+            border-radius: 2px;
+            animation: waveAnim 1.2s ease-in-out infinite alternate;
+        }
+        .wave-bar:nth-child(1) { height: 30%; animation-delay: 0.1s; }
+        .wave-bar:nth-child(2) { height: 75%; animation-delay: 0.3s; }
+        .wave-bar:nth-child(3) { height: 100%; animation-delay: 0.5s; }
+        .wave-bar:nth-child(4) { height: 50%; animation-delay: 0.2s; }
+        .wave-bar:nth-child(5) { height: 85%; animation-delay: 0.4s; }
+        .wave-bar:nth-child(6) { height: 40%; animation-delay: 0.6s; }
+
+        @keyframes waveAnim {
+            0% { transform: scaleY(0.3); }
+            100% { transform: scaleY(1.0); }
+        }
+
+        /* ANCHORED CHAT TERMINAL FEED NEXT TO INPUT BOX */
+        .log-terminal {
+            width: 100%;
+            max-height: calc(100vh - 240px);
+            min-height: 180px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            padding: 6px 14px 6px 0;
+            background: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 13px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* SLEEK CYBER SCROLLBAR */
+        .log-terminal::-webkit-scrollbar {
+            width: 5px;
+        }
+        .log-terminal::-webkit-scrollbar-track {
+            background: rgba(0, 243, 255, 0.05);
+            border-radius: 3px;
+        }
+        .log-terminal::-webkit-scrollbar-thumb {
+            background: var(--cyan-core);
+            border-radius: 3px;
+            box-shadow: 0 0 8px var(--cyan-core);
+        }
+
+        .log-row { line-height: 1.55; display: flex; gap: 10px; }
+        .log-time { color: var(--silver-dim); }
+        .log-tag-user { color: var(--amber-warn); font-weight: bold; }
+        .log-tag-buddy { color: var(--cyan-core); font-weight: bold; }
+        .log-body { color: var(--silver-main); white-space: pre-wrap; word-break: break-word; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+
+        /* CODE & MASTER PROMPT BLOCK WITH FLOATING COPY BUTTON */
+        .code-block-wrapper {
+            position: relative;
+            margin: 10px 0;
+        }
+
+        code-block {
+            display: block;
+            background: rgba(0, 243, 255, 0.06);
+            border-left: 3px solid var(--cyan-core);
+            border-radius: 4px;
+            padding: 34px 14px 12px 14px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyan-core);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            box-shadow: 0 0 14px rgba(0, 243, 255, 0.12);
+        }
+
+        .copy-prompt-btn {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--cyan-core);
+            border-radius: 3px;
+            color: var(--cyan-core);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 4px 10px;
+            cursor: pointer;
+            z-index: 5;
+            transition: all 0.2s ease;
+        }
+
+        .copy-prompt-btn:hover {
+            background: var(--cyan-core);
+            color: #000;
+            box-shadow: 0 0 10px var(--cyan-core);
+        }
+
+        .typing-cursor { display: inline-block; width: 6px; height: 14px; background: var(--cyan-core); margin-left: 4px; animation: blink 0.8s infinite; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* PERMANENTLY ANCHORED INPUT ROW AT BOTTOM */
+        .hud-input-row {
+            display: flex;
+            width: 100%;
+            gap: 12px;
+            flex-shrink: 0;
+            padding-top: 4px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.4);
+            padding: 11px 12px;
+            color: var(--cyan-core);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            outline: none;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-bottom-color: var(--cyan-core);
+            box-shadow: 0 2px 10px rgba(0, 243, 255, 0.25);
+        }
+
+        .cmd-btn {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--cyan-core);
+            border-radius: 4px;
+            color: var(--cyan-core);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            padding: 0 18px;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: all 0.2s;
+        }
+
+        .cmd-btn:hover {
+            background: var(--cyan-core);
+            color: #000;
+            box-shadow: 0 0 14px var(--cyan-core);
+        }
+
+        .cmd-btn-mic {
+            border-color: var(--amber-warn);
+            color: var(--amber-warn);
+        }
+
+        .cmd-btn-mic:hover {
+            background: var(--amber-warn);
+            color: #000;
+            box-shadow: 0 0 14px var(--amber-warn);
+        }
+
+        .stat-block { margin-bottom: 10px; }
+        .stat-title-row { display: flex; justify-content: space-between; font-size: 10px; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; color: var(--silver-dim); }
+        .stat-bar-frame { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; background: var(--cyan-core); box-shadow: 0 0 8px var(--cyan-core); width: 30%; transition: width 0.4s ease; }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+
+        /* UN-CAGED TACTICAL BUTTONS FLOATING OVER BACKGROUND SWARM */
+        .tactical-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-left: 2px solid rgba(0, 243, 255, 0.25);
+            padding: 9px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+            color: var(--silver-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+
+        .tactical-btn:hover {
+            border-left-color: var(--cyan-core);
+            color: var(--cyan-core);
+            transform: translateX(4px);
+        }
+
+        .btn-num { color: var(--cyan-core); font-weight: bold; font-family: 'Share Tech Mono', monospace; }
+
+        .swarm-live-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .swarm-live-node {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            padding: 2px 0;
+            background: transparent;
+            border: none;
+        }
+
+        .state-working { color: var(--amber-warn); font-weight: bold; text-shadow: 0 0 8px var(--amber-warn); }
+        .state-idle { color: var(--silver-dim); }
+
+        .camera-hud-frame {
+            display: none;
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid var(--cyan-core);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 18px rgba(0, 243, 255, 0.25);
+        }
+        .camera-hud-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body id="hudBody">
+
+    <!-- DENSE 3D WEB CLUSTER WITH FLOATING PROMPT COPY BUTTON -->
+    <canvas id="bgSwarmCanvas"></canvas>
+
+    <header>
+        <div class="hud-brand">
+            BUDDY
+        </div>
+        
+        <div class="header-controls">
+            <button class="dock-toggle-btn" id="dockBtn" onclick="toggleCompactMode()">[ 🗖 CORNER WIDGET ]</button>
+
+            <div class="theme-btn-group">
+                <div class="theme-dot" style="background:#00f3ff;" onclick="setTheme('')" title="Cyber Cyan"></div>
+                <div class="theme-dot" style="background:#ffb700;" onclick="setTheme('theme-amber')" title="Neon Amber"></div>
+                <div class="theme-dot" style="background:#00ff9d;" onclick="setTheme('theme-emerald')" title="Emerald Matrix"></div>
+                <div class="theme-dot" style="background:#b026ff;" onclick="setTheme('theme-violet')" title="Void Violet"></div>
+            </div>
+
+            <div class="status-strip">
+                <div class="status-node">SWARM: <span class="status-val" id="swarm-conn">ROUTER -&gt; ROUTER</span></div>
+                <div class="status-node">CORE: <span class="status-val" id="sys-status">ONLINE</span></div>
+                <div class="status-node">ENCRYPTION: <span class="status-val">256-BIT</span></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="hud-stage">
+        <!-- Left Column: Telemetry & Real-Time Swarm Workflow -->
+        <div class="hud-panel">
+            <div class="panel-label">
+                <span>SYSTEM TELEMETRY</span>
+                <span>[ LIVE ]</span>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title-row"><span>CPU UTILIZATION</span><span id="val-cpu">15%</span></div>
+                <div class="stat-bar-frame"><div class="stat-bar-fill" id="bar-cpu" style="width: 15%;"></div></div>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title-row"><span>RAM HEADROOM</span><span id="val-ram">42%</span></div>
+                <div class="stat-bar-frame"><div class="stat-bar-fill" id="bar-ram" style="width: 42%;"></div></div>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title-row"><span>BATTERY STATE</span><span id="val-bat">92%</span></div>
+                <div class="stat-bar-frame"><div class="stat-bar-fill" id="bar-bat" style="width: 92%;"></div></div>
+            </div>
+
+            <div class="panel-label" style="margin-top: 14px;">
+                <span>REAL-TIME AGENT WORKFLOW</span>
+                <span>[ 11 NODES ]</span>
+            </div>
+
+            <div class="swarm-live-list" id="swarm-node-list">
+                <div class="swarm-live-node"><span>AGENT-01: ROUTER</span><span class="state-working" id="st-01">[ WORKING ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-02: ORACLE</span><span class="state-idle" id="st-02">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-03: VISION</span><span class="state-idle" id="st-03">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-04: SYSTEM</span><span class="state-idle" id="st-04">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-05: NETWORK</span><span class="state-idle" id="st-05">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-06: SECURITY</span><span class="state-idle" id="st-06">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-07: STORAGE</span><span class="state-idle" id="st-07">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-08: MEDIA</span><span class="state-idle" id="st-08">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-09: SEARCH</span><span class="state-idle" id="st-09">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-10: WORKFLOW</span><span class="state-idle" id="st-10">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-11: LEARNER</span><span class="state-idle" id="st-11">[ IDLE ]</span></div>
+            </div>
+        </div>
+
+        <!-- Center Column: Bottom-Anchored Clean Terminal Next to Input Box -->
+        <div class="hud-panel center-hud">
+            <div class="panel-label">
+                <span>COMMAND TERMINAL FEED</span>
+                <span>[ STATE: OPTIMAL ]</span>
+            </div>
+
+            <div class="audio-waveform">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+
+            <div class="log-terminal" id="log-feed">
+                <div class="log-row">
+                    <span class="log-time">[ SYSTEM ]</span>
+                    <span class="log-tag-buddy">BUDDY:</span>
+                    <span class="log-body">Buddy 11-Agent AI Swarm Ready. Awaiting boss input.</span>
+                </div>
+            </div>
+
+            <div class="hud-input-row">
+                <input type="text" id="cmd-input" placeholder="INPUT COMMAND STRING..." onkeydown="if(event.key==='Enter') sendCmd()">
+                <button class="cmd-btn cmd-btn-mic" onclick="triggerMic()">MIC</button>
+                <button class="cmd-btn" onclick="sendCmd()">EXECUTE</button>
+            </div>
+        </div>
+
+        <!-- Right Column: Protocol Launcher & Camera Viewer -->
+        <div class="hud-panel">
+            <div class="panel-label">
+                <span>TACTICAL PROTOCOLS</span>
+                <span>[ FAST RUN ]</span>
+            </div>
+
+            <div class="action-grid">
+                <div class="tactical-btn" onclick="runAction('system scan')">
+                    <span class="btn-num">[01]</span> SCAN HUD
+                </div>
+                <div class="tactical-btn" onclick="runAction('see this')">
+                    <span class="btn-num">[02]</span> VISION EYE
+                </div>
+                <div class="tactical-btn" onclick="runAction('coding mode')">
+                    <span class="btn-num">[03]</span> DEV PROTOCOL
+                </div>
+                <div class="tactical-btn" onclick="runAction('clean temp files')">
+                    <span class="btn-num">[04]</span> CLEAN TEMP
+                </div>
+                <div class="tactical-btn" onclick="runAction('weather')">
+                    <span class="btn-num">[05]</span> WEATHER
+                </div>
+                <div class="tactical-btn" onclick="runAction('speed test')">
+                    <span class="btn-num">[06]</span> SPEED TEST
+                </div>
+                <div class="tactical-btn" onclick="runAction('lock pc')">
+                    <span class="btn-num">[07]</span> LOCK PC
+                </div>
+                <div class="tactical-btn" onclick="runAction('what can you do')">
+                    <span class="btn-num">[08]</span> HELP GUIDE
+                </div>
+            </div>
+
+            <div class="panel-label" style="margin-top: 18px;">
+                <span>CAMERA SNAPSHOT FEED</span>
+                <span>[ EYE VIEW ]</span>
+            </div>
+
+            <div class="camera-hud-frame" id="camFrame">
+                <img id="camImg" src="" alt="Camera View">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setTheme(themeClass) {
+            document.getElementById('hudBody').className = themeClass;
+        }
+
+        function toggleCompactMode() {
+            const body = document.getElementById('hudBody');
+            const btn = document.getElementById('dockBtn');
+            body.classList.toggle('compact-mode');
+
+            if (body.classList.contains('compact-mode')) {
+                btn.textContent = '[ 🗖 FULL HUD ]';
+                window.resizeTo(420, 360);
+                window.moveTo(window.screen.availWidth - 440, window.screen.availHeight - 380);
+            } else {
+                btn.textContent = '[ 🗗 CORNER WIDGET ]';
+                window.resizeTo(1280, 800);
+                window.moveTo(100, 100);
+            }
+        }
+
+        function copyCodeBlock(btnEl) {
+            const wrapper = btnEl.closest('.code-block-wrapper');
+            if (!wrapper) return;
+            const codeBlock = wrapper.querySelector('code-block');
+            if (!codeBlock) return;
+
+            const textToCopy = codeBlock.innerText || codeBlock.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const oldText = btnEl.textContent;
+                btnEl.textContent = '[ ✓ COPIED! ]';
+                btnEl.style.background = '#00f3ff';
+                btnEl.style.color = '#000';
+                setTimeout(() => {
+                    btnEl.textContent = oldText;
+                    btnEl.style.background = 'rgba(0, 0, 0, 0.85)';
+                    btnEl.style.color = 'var(--cyan-core)';
+                }, 2000);
+            }).catch(err => {
+                btnEl.textContent = '[ ERROR ]';
+            });
+        }
+
+        // PURE CYBER CYAN 3D WEB CLUSTER ON PITCH OBSIDIAN BLACK (#000000)
+        const canvas = document.getElementById('bgSwarmCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const numSphereParticles = 180;
+        const sphereParticles = [];
+        const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+        for (let i = 0; i < numSphereParticles; i++) {
+            const y = 1 - (i / (numSphereParticles - 1)) * 2;
+            const radiusAtY = Math.sqrt(1 - y * y);
+            const theta = 2 * Math.PI * i / goldenRatio;
+
+            sphereParticles.push({
+                x0: Math.cos(theta) * radiusAtY,
+                y0: y,
+                z0: Math.sin(theta) * radiusAtY,
+                baseSize: 1.6 + Math.random() * 1.8
+            });
+        }
+
+        // INTERIOR 3D PARTICLE CLOUD
+        const numInnerCloudParticles = 80;
+        const innerCloudParticles = [];
+
+        for (let i = 0; i < numInnerCloudParticles; i++) {
+            const r = 55 + Math.random() * 155;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+
+            innerCloudParticles.push({
+                r: r,
+                theta: theta,
+                phi: phi,
+                speedTheta: (Math.random() - 0.5) * 0.014,
+                speedPhi: (Math.random() - 0.5) * 0.014,
+                speedR: (Math.random() - 0.5) * 0.4,
+                baseSize: 0.9 + Math.random() * 1.4,
+                seed: Math.random() * 1000
+            });
+        }
+
+        // LOW-DENSITY AMBIENT BACKGROUND DRIFT PARTICLES
+        const numAmbientBgParticles = 55;
+        const bgAmbientParticles = [];
+
+        for (let i = 0; i < numAmbientBgParticles; i++) {
+            bgAmbientParticles.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                vx: (Math.random() - 0.5) * 0.45,
+                vy: (Math.random() - 0.5) * 0.45,
+                size: 0.8 + Math.random() * 1.2,
+                alpha: 0.05 + Math.random() * 0.16
+            });
+        }
+
+        let rotY = 0;
+        let rotX = 0.2;
+        let isSpeaking = false;
+        let voicePulseScale = 1.0;
+        let voicePulseTarget = 1.0;
+
+        function drawBackgroundSwarm() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const now = Date.now();
+
+            bgAmbientParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 243, 255, ${p.alpha})`;
+                ctx.fill();
+            });
+
+            rotY += 0.005;
+            rotX += 0.001;
+
+            if (isSpeaking) {
+                const t = now * 0.006;
+                const wave = Math.sin(t) * 0.35 + Math.sin(t * 2.1) * 0.15;
+                voicePulseTarget = 1.0 + Math.abs(wave) * 0.85;
+            } else {
+                voicePulseTarget = 1.0;
+            }
+
+            voicePulseScale += (voicePulseTarget - voicePulseScale) * 0.08;
+
+            const orbRadius = 38 * voicePulseScale;
+
+            const ambientGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, orbRadius * 4.5);
+            ambientGrad.addColorStop(0, 'rgba(0, 243, 255, 0.24)');
+            ambientGrad.addColorStop(0.35, 'rgba(0, 243, 255, 0.08)');
+            ambientGrad.addColorStop(0.7, 'rgba(0, 243, 255, 0.02)');
+            ambientGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = ambientGrad;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, orbRadius * 4.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, orbRadius);
+            coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.90)');       // Hot white core
+            coreGrad.addColorStop(0.22, 'rgba(0, 243, 255, 0.75)');     // Radiant Cyber Cyan
+            coreGrad.addColorStop(0.55, 'rgba(0, 243, 255, 0.25)');     // Soft middle fade
+            coreGrad.addColorStop(0.85, 'rgba(0, 243, 255, 0.05)');     // Atmospheric falloff
+            coreGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');            // Pure transparent blend
+
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, orbRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            const outerSphereVoiceScale = 1.0 + (voicePulseScale - 1.0) * 0.40;
+            const R = 250 * outerSphereVoiceScale;
+            const focalLength = 360;
+
+            const projectedDots = [];
+
+            innerCloudParticles.forEach(p => {
+                p.theta += p.speedTheta;
+                p.phi += p.speedPhi;
+                p.r += p.speedR;
+
+                const minR = 50 * voicePulseScale;
+                const maxR = R * 0.82;
+                if (p.r < minR || p.r > maxR) {
+                    p.speedR *= -1;
+                }
+
+                let x = p.r * Math.sin(p.phi) * Math.cos(p.theta + rotY);
+                let y = p.r * Math.sin(p.phi) * Math.sin(p.theta + rotY);
+                let z = p.r * Math.cos(p.phi);
+
+                const scale = focalLength / (focalLength - z);
+                const projX = centerX + x * scale;
+                const projY = centerY + y * scale;
+
+                const alpha = Math.max(0.06, Math.min(0.40, (z + R) / (2 * R))) * outerSphereVoiceScale;
+
+                projectedDots.push({
+                    isInner: true,
+                    x: projX,
+                    y: projY,
+                    z: z,
+                    alpha: alpha,
+                    size: Math.max(0.6, p.baseSize * scale)
+                });
+            });
+
+            const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+            const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+
+            sphereParticles.forEach((p, idx) => {
+                let x = p.x0 * R;
+                let y = p.y0 * R;
+                let z = p.z0 * R;
+
+                let x1 = x * cosY - z * sinY;
+                let z1 = x * sinY + z * cosY;
+
+                let y2 = y * cosX - z1 * sinX;
+                let z2 = y * sinX + z1 * cosX;
+
+                const scale = focalLength / (focalLength - z2);
+                const projX = centerX + x1 * scale;
+                const projY = centerY + y2 * scale;
+
+                const alpha = Math.max(0.08, Math.min(0.48, (z2 + R) / (2 * R))) * outerSphereVoiceScale;
+
+                projectedDots.push({
+                    isInner: false,
+                    idx: idx,
+                    x: projX,
+                    y: projY,
+                    z: z2,
+                    alpha: Math.min(0.50, alpha),
+                    size: Math.max(0.7, p.baseSize * scale)
+                });
+            });
+
+            projectedDots.sort((a, b) => a.z - b.z);
+
+            projectedDots.forEach((d1, idx) => {
+                if (!d1.isInner) {
+                    const distToCenter = Math.hypot(d1.x - centerX, d1.y - centerY);
+                    if (distToCenter < R * 1.08) {
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.lineTo(d1.x, d1.y);
+                        ctx.strokeStyle = `rgba(0, 243, 255, ${d1.alpha * 0.09 * voicePulseScale})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+
+                    for (let j = idx + 1; j < projectedDots.length; j++) {
+                        const d2 = projectedDots[j];
+                        if (!d2.isInner) {
+                            const dist = Math.hypot(d1.x - d2.x, d1.y - d2.y);
+                            if (dist < 145) {
+                                ctx.beginPath();
+                                ctx.moveTo(d1.x, d1.y);
+                                ctx.lineTo(d2.x, d2.y);
+                                ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(d1.alpha, d2.alpha) * 0.20 * outerSphereVoiceScale})`;
+                                ctx.lineWidth = 1;
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+            });
+
+            projectedDots.forEach(d => {
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+                ctx.fillStyle = d.isInner ? `rgba(0, 243, 255, ${d.alpha * 0.85})` : `rgba(0, 243, 255, ${d.alpha})`;
+                ctx.shadowBlur = d.z > 0 ? (d.isInner ? 4 : 6) : 1;
+                ctx.shadowColor = '#00f3ff';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            requestAnimationFrame(drawBackgroundSwarm);
+        }
+
+        drawBackgroundSwarm();
+
+        function getTimeStr() {
+            const now = new Date();
+            return `[ ${now.toTimeString().split(' ')[0]} ]`;
+        }
+
+        function formatLogContent(text) {
+            if (!text) return '';
+            // Escape HTML tags to prevent XSS
+            let clean = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Attach a sleek floating [ 📋 COPY PROMPT ] button ONLY whenever a prompt/code block appears
+            clean = clean.replace(/```(?:markdown|python|html|css|javascript|js|json)?\s*([\s\S]*?)```/g, 
+                '<div class="code-block-wrapper"><button class="copy-prompt-btn" onclick="copyCodeBlock(this)">[ 📋 COPY PROMPT ]</button><code-block>$1</code-block></div>');
+            return clean;
+        }
+
+        function appendUserLog(text) {
+            const feed = document.getElementById('log-feed');
+            const row = document.createElement('div');
+            row.className = 'log-row';
+
+            const timeSpan = `<span class="log-time">${getTimeStr()}</span>`;
+            const tagSpan = `<span class="log-tag-user">USER:</span>`;
+            
+            row.innerHTML = `${timeSpan} ${tagSpan} <span class="log-body">${formatLogContent(text)}</span>`;
+            feed.appendChild(row);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        function speakAndTypeBuddyLog(text) {
+            const feed = document.getElementById('log-feed');
+            const row = document.createElement('div');
+            row.className = 'log-row';
+
+            const timeSpan = `<span class="log-time">${getTimeStr()}</span>`;
+            const tagSpan = `<span class="log-tag-buddy">BUDDY:</span>`;
+            
+            row.innerHTML = `${timeSpan} ${tagSpan} <span class="log-body"></span><span class="typing-cursor"></span>`;
+            feed.appendChild(row);
+            feed.scrollTop = feed.scrollHeight;
+
+            const bodySpan = row.querySelector('.log-body');
+            const cursorSpan = row.querySelector('.typing-cursor');
+            
+            // Clean text speech string for web synthesis
+            const cleanSpeechText = text.replace(/```[\s\S]*?```/g, "Master prompt generated. Click copy prompt to copy.").replace(/`[^`]+`/g, "");
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
+                utterance.rate = 1.05;
+
+                utterance.onstart = () => {
+                    isSpeaking = true;
+                };
+
+                utterance.onend = () => {
+                    isSpeaking = false;
+                    bodySpan.innerHTML = formatLogContent(text);
+                    if (cursorSpan) cursorSpan.remove();
+                    feed.scrollTop = feed.scrollHeight;
+                };
+
+                utterance.onerror = () => {
+                    isSpeaking = false;
+                    bodySpan.innerHTML = formatLogContent(text);
+                    if (cursorSpan) cursorSpan.remove();
+                    feed.scrollTop = feed.scrollHeight;
+                };
+
+                // Trigger voice-synced light sphere expansion
+                isSpeaking = true;
+                window.speechSynthesis.speak(utterance);
+                bodySpan.innerHTML = formatLogContent(text);
+                if (cursorSpan) cursorSpan.remove();
+            } else {
+                bodySpan.innerHTML = formatLogContent(text);
+                if (cursorSpan) cursorSpan.remove();
+            }
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        function sendCmd() {
+            const input = document.getElementById('cmd-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            appendUserLog(val);
+            input.value = '';
+
+            fetch('/api/command', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({command: val})
+            })
+            .then(res => res.json())
+            .then(data => {
+                speakAndTypeBuddyLog(data.response);
+                if (data.telemetry) updateTelemetry(data.telemetry);
+
+                if (data.compact_mode) {
+                    if (!document.getElementById('hudBody').classList.contains('compact-mode')) {
+                        toggleCompactMode();
+                    }
+                }
+
+                if (data.camera_b64) {
+                    const camFrame = document.getElementById('camFrame');
+                    const camImg = document.getElementById('camImg');
+                    if (camFrame && camImg) {
+                        camImg.src = data.camera_b64;
+                        camFrame.style.display = 'block';
+                    }
+                }
+            })
+            .catch(err => {
+                speakAndTypeBuddyLog('Communication failure with core server.');
+            });
+        }
+
+        function triggerMic() {
+            appendUserLog('[ 🎤 VOICE INPUT ACTIVE... ]');
+            fetch('/api/voice', {method: 'POST'})
+            .then(res => res.json())
+            .then(data => {
+                if (data.recognized) {
+                    appendUserLog(data.recognized);
+                }
+                speakAndTypeBuddyLog(data.response);
+                if (data.telemetry) updateTelemetry(data.telemetry);
+                if (data.compact_mode) {
+                    if (!document.getElementById('hudBody').classList.contains('compact-mode')) {
+                        toggleCompactMode();
+                    }
+                }
+                if (data.camera_b64) {
+                    const camFrame = document.getElementById('camFrame');
+                    const camImg = document.getElementById('camImg');
+                    if (camFrame && camImg) {
+                        camImg.src = data.camera_b64;
+                        camFrame.style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        function runAction(actionCmd) {
+            document.getElementById('cmd-input').value = actionCmd;
+            sendCmd();
+        }
+
+        function updateTelemetry(stats) {
+            if (stats.cpu !== undefined) {
+                document.getElementById('val-cpu').textContent = stats.cpu + '%';
+                document.getElementById('bar-cpu').style.width = stats.cpu + '%';
+            }
+            if (stats.ram !== undefined) {
+                document.getElementById('val-ram').textContent = stats.ram + '%';
+                document.getElementById('bar-ram').style.width = stats.ram + '%';
+            }
+            if (stats.battery !== undefined) {
+                document.getElementById('val-bat').textContent = stats.battery + '%';
+                document.getElementById('bar-bat').style.width = stats.battery + '%';
+            }
+
+            if (stats.swarm && stats.swarm.agents) {
+                stats.swarm.agents.forEach(agent => {
+                    const elId = 'st-' + agent.id.split('-')[1];
+                    const el = document.getElementById(elId);
+                    if (el) {
+                        el.textContent = `[ ${agent.status} ]`;
+                        el.className = agent.status === 'WORKING' ? 'state-working' : 'state-idle';
+                    }
+                });
+            }
+
+            if (stats.swarm && stats.swarm.connection) {
+                const connEl = document.getElementById('swarm-conn');
+                if (connEl) {
+                    connEl.textContent = `${stats.swarm.connection.from} -> ${stats.swarm.connection.to}`;
+                }
+            }
+        }
+
+        setInterval(() => {
+            fetch('/api/telemetry')
+            .then(res => res.json())
+            .then(data => updateTelemetry(data));
+        }, 4000);
+    </script>
+</body>
+</html>
