@@ -608,8 +608,8 @@
 
             <div class="hud-input-row">
                 <input type="text" id="cmd-input" placeholder="INPUT COMMAND STRING..." onkeydown="if(event.key==='Enter') sendCmd()">
-                <button class="cmd-btn cmd-btn-mic" onclick="triggerMic()">MIC</button>
-                <button class="cmd-btn" onclick="sendCmd()">EXECUTE</button>
+                <button class="cmd-btn cmd-btn-mic" onclick="triggerMic()" ontouchstart="triggerMic()">MIC</button>
+                <button class="cmd-btn" onclick="sendCmd()" ontouchstart="sendCmd()">EXECUTE</button>
             </div>
         </div>
 

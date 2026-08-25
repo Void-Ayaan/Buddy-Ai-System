@@ -23,17 +23,20 @@
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 40px 20px;
+            padding: 30px 20px;
             overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
 
         .header-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 14px;
+            font-size: 15px;
             letter-spacing: 3px;
             color: #00f3ff;
             text-align: center;
             text-shadow: 0 0 12px rgba(0, 243, 255, 0.5);
+            pointer-events: auto;
         }
 
         .call-status {
@@ -42,6 +45,7 @@
             color: #ffb700;
             margin-top: 6px;
             text-align: center;
+            pointer-events: auto;
         }
 
         .call-timer {
@@ -49,22 +53,24 @@
             font-size: 24px;
             font-weight: 800;
             color: #ffffff;
-            margin-top: 10px;
+            margin-top: 6px;
             letter-spacing: 2px;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+            pointer-events: auto;
         }
 
         /* INCOMING CALL OVERLAY */
         .incoming-call-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #020408;
-            z-index: 999;
+            background: rgba(2, 4, 8, 0.96);
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
             align-items: center;
             padding: 60px 20px;
+            pointer-events: auto;
         }
 
         .incoming-avatar {
@@ -109,13 +115,14 @@
             height: 75px;
             border-radius: 50%;
             border: none;
-            font-size: 26px;
+            font-size: 28px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 25px rgba(0,0,0,0.5);
             transition: transform 0.2s;
+            pointer-events: auto;
         }
 
         .ring-btn-accept { background: #00ff9d; color: #000; box-shadow: 0 0 30px rgba(0, 255, 157, 0.6); }
@@ -125,12 +132,13 @@
         /* CENTRAL GLOWING AUDIO CALL ORB */
         .orb-wrapper {
             position: relative;
-            width: 220px;
-            height: 220px;
+            width: 200px;
+            height: 200px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: auto 0;
+            margin: 10px 0;
+            pointer-events: auto;
         }
 
         .pulse-ring {
@@ -141,6 +149,7 @@
             background: rgba(0, 243, 255, 0.08);
             border: 1px solid rgba(0, 243, 255, 0.3);
             animation: pulseGlow 2s infinite ease-in-out;
+            pointer-events: none;
         }
 
         .audio-orb {
@@ -151,6 +160,9 @@
             box-shadow: 0 0 40px rgba(0, 243, 255, 0.8), 0 0 80px rgba(0, 243, 255, 0.3);
             transition: transform 0.15s ease-out;
             cursor: pointer;
+            pointer-events: auto;
+            position: relative;
+            z-index: 10;
         }
 
         @keyframes pulseGlow {
@@ -164,30 +176,56 @@
             font-size: 13px;
             color: #00f3ff;
             text-align: center;
-            max-width: 320px;
+            width: 100%;
+            max-width: 340px;
             min-height: 48px;
             padding: 10px;
             background: rgba(0, 243, 255, 0.05);
             border: 1px solid rgba(0, 243, 255, 0.2);
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             word-break: break-word;
+            pointer-events: auto;
+        }
+
+        .mobile-input-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 14px;
+            pointer-events: auto;
+        }
+
+        .mobile-input-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--cyan-core, #00f3ff);
+            border-radius: 4px;
+            padding: 10px 12px;
+            color: #00f3ff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            pointer-events: auto;
+            user-select: text;
         }
 
         .controls-row {
             display: flex;
-            gap: 20px;
+            gap: 14px;
             width: 100%;
-            max-width: 320px;
+            max-width: 340px;
+            pointer-events: auto;
         }
 
         .call-btn {
             flex: 1;
-            padding: 16px 0;
+            padding: 15px 0;
             border-radius: 30px;
             border: none;
             font-family: 'Orbitron', sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             letter-spacing: 1px;
             cursor: pointer;
@@ -195,7 +233,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            pointer-events: auto;
+            position: relative;
+            z-index: 10;
         }
 
         .btn-talk {
@@ -225,8 +266,8 @@
         </div>
 
         <div class="incoming-actions">
-            <button class="ring-btn ring-btn-decline" onclick="declineCall()">✕</button>
-            <button class="ring-btn ring-btn-accept" onclick="acceptCall()">📞</button>
+            <button class="ring-btn ring-btn-decline" onclick="declineCall()" ontouchstart="declineCall()">✕</button>
+            <button class="ring-btn ring-btn-accept" onclick="acceptCall()" ontouchstart="acceptCall()">📞</button>
         </div>
     </div>
 
@@ -238,18 +279,23 @@
 
     <div class="orb-wrapper">
         <div class="pulse-ring" id="pulseRing"></div>
-        <div class="audio-orb" id="orb" onclick="toggleListening()"></div>
+        <div class="audio-orb" id="orb" onclick="toggleListening()" ontouchstart="toggleListening()"></div>
     </div>
 
     <div class="speech-transcript" id="transcript">
-        Buddy Voice Standby Active. Say "connect to mobile for audio" on PC to ring your phone!
+        Tap "TALK TO BUDDY", tap the orb, or type below!
+    </div>
+
+    <div class="mobile-input-row">
+        <input type="text" class="mobile-input-box" id="mobileTxt" placeholder="TYPE PHONE MESSAGE..." onkeydown="if(event.key==='Enter') sendTextMsg()">
+        <button class="call-btn btn-talk" style="flex:0 0 70px; border-radius:4px; padding:0;" onclick="sendTextMsg()" ontouchstart="sendTextMsg()">SEND</button>
     </div>
 
     <div class="controls-row">
-        <button class="call-btn btn-talk" id="talkBtn" onclick="startMobileVoiceInput()">
+        <button class="call-btn btn-talk" id="talkBtn" onclick="startMobileVoiceInput()" ontouchstart="startMobileVoiceInput()">
             🎤 TAP TO TALK
         </button>
-        <button class="call-btn btn-end" onclick="endPhoneCall()">
+        <button class="call-btn btn-end" onclick="endPhoneCall()" ontouchstart="endPhoneCall()">
             🔴 END CALL
         </button>
     </div>
@@ -258,7 +304,6 @@
         let audioCtx = null;
         let ringInterval = null;
 
-        // Web Audio Synthesizer Ringtone Generator (440Hz + 480Hz dual US telephone ring frequency)
         function playTelephoneRingtone() {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -269,8 +314,8 @@
                     const osc2 = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
 
-                    osc1.frequency.value = 440; // 440 Hz
-                    osc2.frequency.value = 480; // 480 Hz
+                    osc1.frequency.value = 440;
+                    osc2.frequency.value = 480;
 
                     gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.8);
@@ -309,8 +354,7 @@
             }
         }
 
-        // Auto-request Notification permission on first touch
-        document.body.addEventListener('click', () => {
+        document.body.addEventListener('touchstart', () => {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
             }
@@ -372,17 +416,27 @@
             };
         }
 
-        function startMobileVoiceInput() {
+        function startMobileVoiceInput(e) {
+            if (e) e.stopPropagation();
             if (recognition) {
-                try { recognition.start(); } catch(e) {}
+                try { recognition.start(); } catch(err) {}
             } else {
                 const text = prompt("Your Voice Message to Buddy:");
                 if (text) sendPhoneVoiceCommand(text);
             }
         }
 
-        function toggleListening() {
-            startMobileVoiceInput();
+        function toggleListening(e) {
+            startMobileVoiceInput(e);
+        }
+
+        function sendTextMsg() {
+            const box = document.getElementById('mobileTxt');
+            const val = box.value.trim();
+            if (!val) return;
+            document.getElementById('transcript').textContent = `YOU: "${val}"`;
+            sendPhoneVoiceCommand(val);
+            box.value = '';
         }
 
         function speakPhoneOutput(text) {
@@ -424,7 +478,8 @@
             });
         }
 
-        function endPhoneCall() {
+        function endPhoneCall(e) {
+            if (e) e.stopPropagation();
             stopTelephoneRingtone();
             clearInterval(timerInterval);
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
