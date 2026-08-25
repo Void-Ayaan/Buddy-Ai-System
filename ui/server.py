@@ -49,6 +49,7 @@ from tools.qr_tools import get_mobile_connect_info
 from tools.phone_bridge import initiate_mobile_audio_call
 from tools.twilio_call import make_real_cellular_call
 from tools.offline_ring import trigger_offline_local_ring, trigger_offline_phone_link
+from tools.unlock_pc import unlock_windows_pc
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -135,6 +136,8 @@ def execute_command_string(user_input):
 
         if action == "make_master_prompt":
             result = create_master_prompt(payload)
+        elif action == "unlock_pc":
+            result = unlock_windows_pc(payload)
         elif action == "connect_mobile_audio":
             result = trigger_offline_local_ring(PORT)
         elif action == "learn_topic":

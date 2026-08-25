@@ -134,7 +134,11 @@ def route(text):
     if any(p in text_lower for p in ["clean temp", "clean temp files", "clean system", "free space", "disk cleanup", "clean junk"]):
         return "clean_temp", None
 
-    # 27. Emotion & Mood Queries
+    # 27. PC Unlock & Power Controls
+    if text_lower.startswith("unlock pc") or text_lower.startswith("unlock my pc") or text_lower.startswith("unlock computer") or text_lower.startswith("unlock laptop") or text_lower.startswith("unlock system"):
+        payload = re.sub(r"^(?:unlock\s+my\s+pc|unlock\s+pc|unlock\s+computer|unlock\s+laptop|unlock\s+system)\s*", "", text, flags=re.IGNORECASE).strip()
+        return "unlock_pc", payload
+
     if any(p in text_lower for p in ["connect to mobile for audio", "call my phone", "connect audio to phone", "phone call mode", "mobile audio call", "mobile call"]):
         return "connect_mobile_audio", None
 
