@@ -783,9 +783,17 @@
         const canvas = document.getElementById('bgSwarmCanvas');
         const ctx = canvas.getContext('2d');
 
+        function getViewportDimensions() {
+            return {
+                w: window.innerWidth || document.documentElement.clientWidth || screen.width || 1280,
+                h: window.innerHeight || document.documentElement.clientHeight || screen.height || 720
+            };
+        }
+
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const dims = getViewportDimensions();
+            canvas.width = dims.w;
+            canvas.height = dims.h;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -832,16 +840,21 @@
         const numAmbientBgParticles = 55;
         const bgAmbientParticles = [];
 
-        for (let i = 0; i < numAmbientBgParticles; i++) {
-            bgAmbientParticles.push({
-                x: Math.random() * window.innerWidth,
-                y: Math.random() * window.innerHeight,
-                vx: (Math.random() - 0.5) * 0.45,
-                vy: (Math.random() - 0.5) * 0.45,
-                size: 0.8 + Math.random() * 1.2,
-                alpha: 0.05 + Math.random() * 0.16
-            });
+        function initAmbientParticles() {
+            const dims = getViewportDimensions();
+            bgAmbientParticles.length = 0;
+            for (let i = 0; i < numAmbientBgParticles; i++) {
+                bgAmbientParticles.push({
+                    x: Math.random() * dims.w,
+                    y: Math.random() * dims.h,
+                    vx: (Math.random() - 0.5) * 0.45,
+                    vy: (Math.random() - 0.5) * 0.45,
+                    size: 0.8 + Math.random() * 1.2,
+                    alpha: 0.15 + Math.random() * 0.25
+                });
+            }
         }
+        initAmbientParticles();
 
         let rotY = 0;
         let rotX = 0.2;
@@ -850,16 +863,17 @@
         let voicePulseTarget = 1.0;
 
         function drawBackgroundSwarm() {
-            if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+            const dims = getViewportDimensions();
+            if (canvas.width !== dims.w || canvas.height !== dims.h) {
+                canvas.width = dims.w;
+                canvas.height = dims.h;
             }
 
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+            const centerX = dims.w / 2;
+            const centerY = dims.h / 2;
             const now = Date.now();
 
             bgAmbientParticles.forEach(p => {
