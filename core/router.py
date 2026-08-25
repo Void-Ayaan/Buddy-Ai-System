@@ -1,7 +1,9 @@
 import re
+from core.fuzzy_corrector import normalize_fuzzy_input
 
 def route(text):
-    text_lower = re.sub(r"^(?:buddy|hey\s+buddy|hello\s+buddy)\s+", "", text.lower().strip(), flags=re.IGNORECASE).strip()
+    text_fuzzy = normalize_fuzzy_input(text)
+    text_lower = re.sub(r"^(?:buddy|hey\s+buddy|hello\s+buddy)\s+", "", text_fuzzy.lower().strip(), flags=re.IGNORECASE).strip()
 
     # 0a. Master Prompt Engineering Architect Protocol
     if any(p in text_lower for p in ["make prompt", "create prompt", "master prompt", "build prompt", "write prompt", "prompt engineering", "listen and make prompt"]):
