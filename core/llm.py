@@ -17,11 +17,8 @@ def clean_ascii_text(text):
     """Clean HTML tags and unicode artifacts for crisp presentation."""
     if not text:
         return ""
-    # Strip HTML tags
     clean = re.sub(r'<[^>]+>', '', text)
-    # Convert HTML entities like &quot; &#039;
     clean = clean.replace('&quot;', '"').replace('&#039;', "'").replace('&amp;', '&')
-    # Filter non-ASCII unicode artifacts
     clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
     return " ".join(clean.split())
 
@@ -70,23 +67,48 @@ def query_local_openai_compatible(prompt):
 
 def query_local_knowledge_base(prompt):
     """
-    Local Knowledge Synthesizer:
-    Direct offline factual answers from Buddy's local AI knowledge base.
-    Prevents unnecessary web searches when asking standard knowledge questions!
+    Expanded High-Precision Factual Knowledge Engine:
+    Covers Science, Physics, Computer Science, AI, History, and Pop Culture locally with 0 latency.
     """
     p_lower = prompt.lower().strip()
     
-    # Factual offline dictionary matching
-    if "tony stark" in p_lower or "tonny stark" in p_lower:
+    # 1. Marvel & Pop Culture
+    if any(k in p_lower for k in ["tony stark", "tonny stark", "iron man", "ironman"]):
         return "Tony Stark (Iron Man) is a genius billionaire industrialist, inventor, and founding member of the Avengers in Marvel Comics, portrayed by Robert Downey Jr., Boss!"
+    elif any(k in p_lower for k in ["captain america", "steve rogers"]):
+        return "Captain America (Steve Rogers) is a World War II super-soldier wielding an indestructible vibranium shield and leading the Avengers, Boss!"
+    elif any(k in p_lower for k in ["batman", "bruce wayne"]):
+        return "Batman (Bruce Wayne) is Gotham City's vigilante hero, using martial arts, high-tech gadgets, and detective intellect to fight crime, Boss!"
+
+    # 2. Technology & Computing
+    elif any(k in p_lower for k in ["artificial intelligence", "what is ai", "ai definition"]):
+        return "Artificial Intelligence (AI) refers to computer systems engineered to perform tasks requiring human-like intelligence, such as reasoning, learning, computer vision, and NLP, Boss!"
+    elif any(k in p_lower for k in ["machine learning", "what is ml"]):
+        return "Machine Learning (ML) is a subset of AI focused on algorithms that learn patterns from data to make predictions without explicit programming, Boss!"
+    elif any(k in p_lower for k in ["deep learning", "neural network"]):
+        return "Deep Learning uses multi-layered artificial neural networks inspired by the human brain to process complex data like images, audio, and language, Boss!"
     elif "elon musk" in p_lower:
         return "Elon Musk is the CEO of Tesla, SpaceX, and xAI, known for pioneering electric vehicles, commercial spaceflight, and AI development, Boss!"
+    elif "python" in p_lower and ("what is" in p_lower or "define" in p_lower):
+        return "Python is a high-level, interpreted programming language known for clean syntax, dynamic typing, and immense popularity in web dev, data science, and AI, Boss!"
+    elif "javascript" in p_lower and ("what is" in p_lower or "define" in p_lower):
+        return "JavaScript is the core programming language of the Web, enabling interactive dynamic web pages, frontend UIs, and server-side Node.js applications, Boss!"
+    elif "linux" in p_lower and ("what is" in p_lower or "define" in p_lower):
+        return "Linux is an open-source Unix-like operating system kernel created by Linus Torvalds, powering servers, supercomputers, Android devices, and dev environments, Boss!"
+
+    # 3. Physics & Astronomy
     elif "blackhole" in p_lower or "black hole" in p_lower:
         return "A black hole is a region of spacetime where gravity is so intense that nothing, not even light, can escape from it. The boundary is called the event horizon, Boss!"
-    elif "quantum computing" in p_lower:
+    elif "quantum computing" in p_lower or "quantum computer" in p_lower:
         return "Quantum computing uses quantum bits (qubits) to perform complex computations exponentially faster than classical supercomputers using superposition and entanglement, Boss!"
-    elif "python" in p_lower and ("what is" in p_lower or "define" in p_lower):
-        return "Python is a high-level, interpreted programming language known for its clear syntax, dynamic typing, and vast ecosystem for web dev, data science, and AI, Boss!"
+    elif "relativity" in p_lower or "einstein" in p_lower:
+        return "Albert Einstein's Theory of Relativity (Special and General) revolutionized physics by describing spacetime curvature, gravity, and the mass-energy equivalence equation E=mc^2, Boss!"
+    elif "speed of light" in p_lower:
+        return "The speed of light in a vacuum is approximately 299,792,458 meters per second (about 300,000 km/s or 186,282 miles per second), Boss!"
+    elif "solar system" in p_lower or "planets" in p_lower:
+        return "Our Solar System consists of the Sun and eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune, along with dwarf planets and asteroids, Boss!"
+    elif "photosynthesis" in p_lower:
+        return "Photosynthesis is the chemical process by which green plants use sunlight, water, and carbon dioxide to synthesize nutrients and release oxygen, Boss!"
 
     return None
 
@@ -155,12 +177,10 @@ def query_wikipedia_knowledge(prompt):
 
 def web_search_knowledge_synthesis(prompt):
     """Retrieve real-time web knowledge via Wikipedia (with typo correction) and DuckDuckGo."""
-    # Try Wikipedia Knowledge API first (with typo auto-correction)
     wiki_res = query_wikipedia_knowledge(prompt)
     if wiki_res:
         return wiki_res
 
-    # Try DuckDuckGo DDGS search
     try:
         try:
             from ddgs import DDGS
@@ -239,7 +259,7 @@ def ask_ai(prompt):
     prompt_clean = prompt.strip()
     prompt_lower = prompt_clean.lower()
 
-    # Tier 1: Handle greetings & identity directly
+    # Tier 1: Greetings & Identity
     if prompt_lower in ["who are you", "what is your name", "who made you"]:
         return "I am Buddy, your loyal 11-Agent AI Swarm Assistant, Boss!"
     elif prompt_lower in ["hello", "hi", "hey", "hello buddy", "hey buddy"]:
@@ -251,17 +271,14 @@ def ask_ai(prompt):
         return code_res
 
     # Tier 3: LOCAL LLM MODEL FIRST (Ollama, LM Studio, or Local Factual Knowledge Base)
-    # Check Ollama local instance (localhost:11434)
     ollama_res = query_ollama_local(prompt_clean)
     if ollama_res:
         return ollama_res
 
-    # Check LM Studio / OpenAI-compatible local server (localhost:1234 / localhost:8080)
     openai_res = query_local_openai_compatible(prompt_clean)
     if openai_res:
         return openai_res
 
-    # Check Local Factual Knowledge Engine (Offline Model)
     local_kb_res = query_local_knowledge_base(prompt_clean)
     if local_kb_res:
         return local_kb_res
