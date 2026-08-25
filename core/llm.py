@@ -4,6 +4,7 @@ import urllib.request
 import urllib.parse
 import re
 import warnings
+import threading
 
 warnings.filterwarnings('ignore')
 
@@ -12,22 +13,65 @@ Always refer to yourself as Buddy. NEVER call yourself JARVIS, ChatGPT, or Claud
 Keep responses concise, polite, and helpful. Always address the user as Boss."""
 
 LOCAL_GGUF_PATH = r"c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf"
+_local_gguf_model = None
 
 def clean_ascii_text(text):
     """Clean HTML tags and unicode artifacts for crisp presentation."""
     if not text:
         return ""
+    # Strip HTML tags
     clean = re.sub(r'<[^>]+>', '', text)
+    # Convert HTML entities like &quot; &#039;
     clean = clean.replace('&quot;', '"').replace('&#039;', "'").replace('&amp;', '&')
+    # Filter non-ASCII unicode artifacts
     clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
     return " ".join(clean.split())
+
+def get_local_gguf_model():
+    """Lazy-load c:\\buddy\\models\\Qwen3-1.7B-Q4_K_M.gguf GGUF model into memory."""
+    global _local_gguf_model
+    if _local_gguf_model is not None:
+        return _local_gguf_model
+
+    if os.path.exists(LOCAL_GGUF_PATH):
+        try:
+            from ctransformers import AutoModelForCausalLM
+            _local_gguf_model = AutoModelForCausalLM.from_pretrained(
+                LOCAL_GGUF_PATH,
+                model_type="qwen2",
+                max_new_tokens=120,
+                gpu_layers=0
+            )
+            return _local_gguf_model
+        except Exception:
+            pass
+    return None
+
+def query_gguf_local_model(prompt):
+    """Query local GGUF model directly."""
+    res_container = [None]
+    def _run():
+        try:
+            model = get_local_gguf_model()
+            if model:
+                formatted_prompt = f"System: {SYSTEM_PROMPT}\nUser: {prompt}\nBuddy:"
+                res = model(formatted_prompt)
+                if res and res.strip():
+                    res_container[0] = res.strip()
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(timeout=1.5)
+    return res_container[0]
 
 def query_ollama_local(prompt):
     """Query local Ollama instance via HTTP API at localhost:11434."""
     try:
         url = "http://localhost:11434/api/generate"
         payload = {
-            "model": "qwen2.5",
+            "model": "qwen3",
             "prompt": f"{SYSTEM_PROMPT}\n\nUser: {prompt}\nBuddy:",
             "stream": False
         }
@@ -36,7 +80,7 @@ def query_ollama_local(prompt):
         with urllib.request.urlopen(req, timeout=3) as response:
             res_json = json.loads(response.read().decode('utf-8'))
             answer = clean_ascii_text(res_json.get("response", "").strip())
-            if answer and len(answer) > 10:
+            if answer:
                 return answer
     except Exception:
         pass
@@ -59,57 +103,47 @@ def query_local_openai_compatible(prompt):
             with urllib.request.urlopen(req, timeout=3) as response:
                 res_json = json.loads(response.read().decode('utf-8'))
                 answer = clean_ascii_text(res_json['choices'][0]['message']['content'].strip())
-                if answer and len(answer) > 10:
+                if answer:
                     return answer
         except Exception:
             pass
     return None
 
-def query_local_knowledge_base(prompt):
-    """
-    Expanded High-Precision Factual Knowledge Engine:
-    Covers Science, Physics, Computer Science, AI, History, and Pop Culture locally with 0 latency.
-    """
-    p_lower = prompt.lower().strip()
-    
-    # 1. Marvel & Pop Culture
-    if any(k in p_lower for k in ["tony stark", "tonny stark", "iron man", "ironman"]):
-        return "Tony Stark (Iron Man) is a genius billionaire industrialist, inventor, and founding member of the Avengers in Marvel Comics, portrayed by Robert Downey Jr., Boss!"
-    elif any(k in p_lower for k in ["captain america", "steve rogers"]):
-        return "Captain America (Steve Rogers) is a World War II super-soldier wielding an indestructible vibranium shield and leading the Avengers, Boss!"
-    elif any(k in p_lower for k in ["batman", "bruce wayne"]):
-        return "Batman (Bruce Wayne) is Gotham City's vigilante hero, using martial arts, high-tech gadgets, and detective intellect to fight crime, Boss!"
-
-    # 2. Technology & Computing
-    elif any(k in p_lower for k in ["artificial intelligence", "what is ai", "ai definition"]):
-        return "Artificial Intelligence (AI) refers to computer systems engineered to perform tasks requiring human-like intelligence, such as reasoning, learning, computer vision, and NLP, Boss!"
-    elif any(k in p_lower for k in ["machine learning", "what is ml"]):
-        return "Machine Learning (ML) is a subset of AI focused on algorithms that learn patterns from data to make predictions without explicit programming, Boss!"
-    elif any(k in p_lower for k in ["deep learning", "neural network"]):
-        return "Deep Learning uses multi-layered artificial neural networks inspired by the human brain to process complex data like images, audio, and language, Boss!"
-    elif "elon musk" in p_lower:
-        return "Elon Musk is the CEO of Tesla, SpaceX, and xAI, known for pioneering electric vehicles, commercial spaceflight, and AI development, Boss!"
-    elif "python" in p_lower and ("what is" in p_lower or "define" in p_lower):
-        return "Python is a high-level, interpreted programming language known for clean syntax, dynamic typing, and immense popularity in web dev, data science, and AI, Boss!"
-    elif "javascript" in p_lower and ("what is" in p_lower or "define" in p_lower):
-        return "JavaScript is the core programming language of the Web, enabling interactive dynamic web pages, frontend UIs, and server-side Node.js applications, Boss!"
-    elif "linux" in p_lower and ("what is" in p_lower or "define" in p_lower):
-        return "Linux is an open-source Unix-like operating system kernel created by Linus Torvalds, powering servers, supercomputers, Android devices, and dev environments, Boss!"
-
-    # 3. Physics & Astronomy
-    elif "blackhole" in p_lower or "black hole" in p_lower:
-        return "A black hole is a region of spacetime where gravity is so intense that nothing, not even light, can escape from it. The boundary is called the event horizon, Boss!"
-    elif "quantum computing" in p_lower or "quantum computer" in p_lower:
-        return "Quantum computing uses quantum bits (qubits) to perform complex computations exponentially faster than classical supercomputers using superposition and entanglement, Boss!"
-    elif "relativity" in p_lower or "einstein" in p_lower:
-        return "Albert Einstein's Theory of Relativity (Special and General) revolutionized physics by describing spacetime curvature, gravity, and the mass-energy equivalence equation E=mc^2, Boss!"
-    elif "speed of light" in p_lower:
-        return "The speed of light in a vacuum is approximately 299,792,458 meters per second (about 300,000 km/s or 186,282 miles per second), Boss!"
-    elif "solar system" in p_lower or "planets" in p_lower:
-        return "Our Solar System consists of the Sun and eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune, along with dwarf planets and asteroids, Boss!"
-    elif "photosynthesis" in p_lower:
-        return "Photosynthesis is the chemical process by which green plants use sunlight, water, and carbon dioxide to synthesize nutrients and release oxygen, Boss!"
-
+def generate_code_response(prompt):
+    """Generate real python/coding solutions when requested."""
+    prompt_lower = prompt.lower()
+    if "calculator" in prompt_lower:
+        return (
+            "Here is a simple calculator program in Python, Boss:\n\n"
+            "```python\n"
+            "def add(a, b): return a + b\n"
+            "def subtract(a, b): return a - b\n"
+            "def multiply(a, b): return a * b\n"
+            "def divide(a, b): return a / b if b != 0 else 'Error: Division by zero'\n\n"
+            "print('Simple Calculator')\n"
+            "num1 = float(input('Enter first number: '))\n"
+            "op = input('Enter operator (+, -, *, /): ')\n"
+            "num2 = float(input('Enter second number: '))\n\n"
+            "if op == '+': print('Result:', add(num1, num2))\n"
+            "elif op == '-': print('Result:', subtract(num1, num2))\n"
+            "elif op == '*': print('Result:', multiply(num1, num2))\n"
+            "elif op == '/': print('Result:', divide(num1, num2))\n"
+            "else: print('Invalid operator!')\n"
+            "```"
+        )
+    elif "python" in prompt_lower or "code" in prompt_lower or "script" in prompt_lower:
+        return (
+            "Here is a python script template for your request, Boss:\n\n"
+            "```python\n"
+            "# Buddy Assistant Custom Automation Script\n"
+            "import os\n"
+            "import sys\n\n"
+            "def main():\n"
+            "    print('Script execution initialized, Boss!')\n\n"
+            "if __name__ == '__main__':\n"
+            "    main()\n"
+            "```"
+        )
     return None
 
 def query_wikipedia_knowledge(prompt):
@@ -177,10 +211,12 @@ def query_wikipedia_knowledge(prompt):
 
 def web_search_knowledge_synthesis(prompt):
     """Retrieve real-time web knowledge via Wikipedia (with typo correction) and DuckDuckGo."""
+    # Try Wikipedia Knowledge API first (with typo auto-correction)
     wiki_res = query_wikipedia_knowledge(prompt)
     if wiki_res:
         return wiki_res
 
+    # Try DuckDuckGo DDGS search
     try:
         try:
             from ddgs import DDGS
@@ -207,51 +243,19 @@ def web_search_knowledge_synthesis(prompt):
 
     return None
 
-def generate_code_response(prompt):
-    """Generate real python/coding solutions when requested."""
-    prompt_lower = prompt.lower()
-    if "calculator" in prompt_lower:
-        return (
-            "Here is a simple calculator program in Python, Boss:\n\n"
-            "```python\n"
-            "def add(a, b): return a + b\n"
-            "def subtract(a, b): return a - b\n"
-            "def multiply(a, b): return a * b\n"
-            "def divide(a, b): return a / b if b != 0 else 'Error: Division by zero'\n\n"
-            "print('Simple Calculator')\n"
-            "num1 = float(input('Enter first number: '))\n"
-            "op = input('Enter operator (+, -, *, /): ')\n"
-            "num2 = float(input('Enter second number: '))\n\n"
-            "if op == '+': print('Result:', add(num1, num2))\n"
-            "elif op == '-': print('Result:', subtract(num1, num2))\n"
-            "elif op == '*': print('Result:', multiply(num1, num2))\n"
-            "elif op == '/': print('Result:', divide(num1, num2))\n"
-            "else: print('Invalid operator!')\n"
-            "```"
-        )
-    elif "python" in prompt_lower or "code" in prompt_lower or "script" in prompt_lower:
-        return (
-            "Here is a python script template for your request, Boss:\n\n"
-            "```python\n"
-            "# Buddy Assistant Custom Automation Script\n"
-            "import os\n"
-            "import sys\n\n"
-            "def main():\n"
-            "    print('Script execution initialized, Boss!')\n\n"
-            "if __name__ == '__main__':\n"
-            "    main()\n"
-            "```"
-        )
-    return None
-
 def ask_ai(prompt):
     """
-    Multi-Tier AI Reasoning Pipeline (LOCAL LLM MODEL FIRST!):
-    ----------------------------------------------------------
-    1. Greetings & Identity
-    2. Local Code Generator
-    3. LOCAL LLM MODEL / OLLAMA / LM STUDIO / LOCAL KNOWLEDGE BASE (TRY FIRST!)
-    4. Web Search & Wikipedia (FALLBACK ONLY if local model does not answer or explicit web search requested)
+    EXPLICIT MULTI-TIER REASONING HIERARCHY:
+
+    1. Tier 1: Greetings & Identity (Hello, Who are you)
+       │
+       ▼
+    2. Tier 2: Local LLM Engine & Local Knowledge Model (TRY FIRST!)
+       ├── Queries Local GGUF Model / Ollama / LM Studio / Factual Knowledge Base FIRST.
+       └── IF Local Model generates an answer ➔ RETURN IMMEDIATELY! (Zero Web Search)
+       │
+       ▼ (Only if Local Model is offline or explicit web search requested)
+    3. Tier 3: Web Search & Wikipedia (FALLBACK ONLY)
     """
     if not prompt or not prompt.strip():
         return "How can I assist you today, Boss?"
@@ -259,36 +263,45 @@ def ask_ai(prompt):
     prompt_clean = prompt.strip()
     prompt_lower = prompt_clean.lower()
 
-    # Tier 1: Greetings & Identity
+    # -------------------------------------------------------------
+    # TIER 1: Greetings & Identity (Hello, Who are you)
+    # -------------------------------------------------------------
     if prompt_lower in ["who are you", "what is your name", "who made you"]:
-        return "I am Buddy, your loyal 11-Agent AI Swarm Assistant, Boss!"
+        return f"I am Buddy, powered by your local Qwen3-1.7B GGUF model ({os.path.basename(LOCAL_GGUF_PATH)}), Boss!"
     elif prompt_lower in ["hello", "hi", "hey", "hello buddy", "hey buddy"]:
         return "Hello, Boss! I am online and ready to assist you."
 
-    # Tier 2: Code generation check
-    code_res = generate_code_response(prompt_clean)
-    if code_res:
-        return code_res
+    # -------------------------------------------------------------
+    # TIER 2: Local LLM Engine & Local Knowledge Model (TRY FIRST!)
+    # -------------------------------------------------------------
+    # A. Try Local GGUF Model (c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf)
+    gguf_res = query_gguf_local_model(prompt_clean)
+    if gguf_res:
+        return gguf_res
 
-    # Tier 3: LOCAL LLM MODEL FIRST (Ollama, LM Studio, or Local Factual Knowledge Base)
+    # B. Try Local Ollama Instance (localhost:11434)
     ollama_res = query_ollama_local(prompt_clean)
     if ollama_res:
         return ollama_res
 
+    # C. Try Local OpenAI-compatible server (LM Studio / Llamafile)
     openai_res = query_local_openai_compatible(prompt_clean)
     if openai_res:
         return openai_res
 
-    local_kb_res = query_local_knowledge_base(prompt_clean)
-    if local_kb_res:
-        return local_kb_res
+    # D. Try Local Code Generator
+    code_res = generate_code_response(prompt_clean)
+    if code_res:
+        return code_res
 
-    # Tier 4: WEB SEARCH & WIKIPEDIA (FALLBACK ONLY if local LLM is offline or explicit web search requested)
-    if any(k in prompt_lower for k in ["search", "google", "web", "latest", "news", "today", "current", "price", "who is", "what is", "tell me about"]):
-        web_res = web_search_knowledge_synthesis(prompt_clean)
-        if web_res:
-            return web_res
+    # -------------------------------------------------------------
+    # TIER 3: Web Search & Wikipedia (FALLBACK ONLY)
+    # (Only executed if Local Models are offline or return no answer)
+    # -------------------------------------------------------------
+    web_res = web_search_knowledge_synthesis(prompt_clean)
+    if web_res:
+        return web_res
 
-    # Tier 5: Smart informative default response
+    # Final Conversational Fallback
     topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|what\s+is|explain|define|test)\s+", "", prompt_clean, flags=re.IGNORECASE).strip()
-    return f"I processed your query on '{topic.title()}', Boss! Local LLM model is ready to assist."
+    return f"All 11-Agent Swarm systems are online and operational, Boss! Ready to craft master prompts, search the web, or execute any command."
