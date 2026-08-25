@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BUDDY 3D HUD</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
@@ -36,6 +36,7 @@
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -50,7 +51,7 @@
             transition: all 0.4s ease;
         }
 
-        /* FULL-SCREEN CENTRALIZED BACKGROUND SWARM CANVAS (NON-RESPONSIVE TO MOUSE) */
+        /* FULL-SCREEN CENTRALIZED BACKGROUND SWARM CANVAS */
         canvas#bgSwarmCanvas {
             position: absolute;
             top: 0;
@@ -88,7 +89,7 @@
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 14px;
         }
 
         .dock-toggle-btn {
@@ -129,7 +130,7 @@
 
         .status-strip {
             display: flex;
-            gap: 20px;
+            gap: 18px;
             font-size: 11px;
             font-family: 'Share Tech Mono', monospace;
             color: var(--silver-dim);
@@ -150,29 +151,6 @@
             position: relative;
             z-index: 2;
             transition: all 0.4s ease;
-        }
-
-        /* COMPACT CORNER VISUAL WIDGET MODE */
-        body.compact-mode .hud-stage {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        body.compact-mode .hud-panel:nth-child(1),
-        body.compact-mode .hud-panel:nth-child(3),
-        body.compact-mode .log-terminal,
-        body.compact-mode .hud-input-row {
-            display: none !important;
-        }
-
-        body.compact-mode .hud-panel.center-hud {
-            width: 100%;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
         }
 
         /* FRAMELESS UN-CAGED STATIC PANELS */
@@ -256,7 +234,6 @@
             font-family: 'Share Tech Mono', monospace;
         }
 
-        /* SLEEK CYBER SCROLLBAR */
         .log-terminal::-webkit-scrollbar {
             width: 5px;
         }
@@ -276,7 +253,6 @@
         .log-tag-buddy { color: var(--cyan-core); font-weight: bold; }
         .log-body { color: var(--silver-main); white-space: pre-wrap; word-break: break-word; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 
-        /* CODE & MASTER PROMPT BLOCK WITH FLOATING COPY BUTTON */
         .code-block-wrapper {
             position: relative;
             margin: 10px 0;
@@ -390,7 +366,6 @@
 
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
 
-        /* UN-CAGED TACTICAL BUTTONS FLOATING OVER BACKGROUND SWARM */
         .tactical-btn {
             background: rgba(0, 0, 0, 0.5);
             border: none;
@@ -448,11 +423,96 @@
             height: auto;
             display: block;
         }
+
+        /* MOBILE QR MODAL */
+        .qr-modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-modal-card {
+            background: rgba(2, 4, 8, 0.95);
+            border: 1px solid var(--cyan-core);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.35);
+            max-width: 340px;
+            width: 90%;
+        }
+
+        .qr-modal-card img {
+            width: 200px;
+            height: 200px;
+            border: 2px solid var(--cyan-core);
+            border-radius: 6px;
+            margin: 14px 0;
+        }
+
+        .qr-link-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            color: var(--cyan-core);
+            word-break: break-all;
+            margin-bottom: 14px;
+        }
+
+        /* 📱 RESPONSIVE MOBILE CYBER HUD LAYOUT BREAKPOINT */
+        @media (max-width: 768px) {
+            header {
+                padding: 10px 14px;
+            }
+            .hud-brand { font-size: 18px; letter-spacing: 2px; }
+            .status-strip { display: none; }
+
+            .hud-stage {
+                display: flex;
+                flex-direction: column;
+                padding: 6px 12px 14px 12px;
+                gap: 10px;
+            }
+
+            .hud-panel:nth-child(1),
+            .hud-panel:nth-child(3) {
+                display: none;
+            }
+
+            .hud-panel.center-hud {
+                width: 100%;
+                height: 100%;
+            }
+
+            .log-terminal {
+                max-height: calc(100vh - 180px);
+                min-height: 220px;
+                font-size: 12px;
+            }
+
+            .hud-input-row {
+                gap: 8px;
+            }
+
+            input[type="text"] {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .cmd-btn {
+                padding: 0 12px;
+                font-size: 10px;
+            }
+        }
     </style>
 </head>
 <body id="hudBody">
 
-    <!-- DENSE 3D WEB CLUSTER WITH FLOATING PROMPT COPY BUTTON -->
+    <!-- DENSE 3D WEB CLUSTER ON PITCH OBSIDIAN BLACK (#000000) WITH MOBILE WI-FI ACCESS -->
     <canvas id="bgSwarmCanvas"></canvas>
 
     <header>
@@ -461,6 +521,7 @@
         </div>
         
         <div class="header-controls">
+            <button class="dock-toggle-btn" onclick="openQrModal()">[ 📱 MOBILE QR ]</button>
             <button class="dock-toggle-btn" id="dockBtn" onclick="toggleCompactMode()">[ 🗖 CORNER WIDGET ]</button>
 
             <div class="theme-btn-group">
@@ -472,7 +533,7 @@
 
             <div class="status-strip">
                 <div class="status-node">SWARM: <span class="status-val" id="swarm-conn">ROUTER -&gt; ROUTER</span></div>
-                <div class="status-node">CORE: <span class="status-val" id="sys-status">ONLINE</span></div>
+                <div class="status-node">WI-FI: <span class="status-val" id="wifi-ip">192.168.1.4:5000</span></div>
                 <div class="status-node">ENCRYPTION: <span class="status-val">256-BIT</span></div>
             </div>
         </div>
@@ -597,6 +658,22 @@
         </div>
     </div>
 
+    <!-- MOBILE WI-FI CONNECTION QR MODAL -->
+    <div class="qr-modal-backdrop" id="qrModal" onclick="closeQrModal(event)">
+        <div class="qr-modal-card" onclick="event.stopPropagation()">
+            <div class="panel-label" style="justify-content: center; margin-bottom: 4px;">
+                <span>📱 MOBILE CYBER HUD</span>
+            </div>
+            <p style="font-size: 11px; color: var(--silver-dim);">Scan this QR Code on your Phone or Tablet connected to local Wi-Fi:</p>
+            
+            <img id="qrModalImg" src="" alt="Mobile Connection QR Code">
+            
+            <div class="qr-link-text" id="qrModalUrl">http://192.168.1.4:5000</div>
+            
+            <button class="cmd-btn" style="width: 100%; padding: 8px 0;" onclick="closeQrModal()">CLOSE</button>
+        </div>
+    </div>
+
     <script>
         function setTheme(themeClass) {
             document.getElementById('hudBody').className = themeClass;
@@ -616,6 +693,23 @@
                 window.resizeTo(1280, 800);
                 window.moveTo(100, 100);
             }
+        }
+
+        function openQrModal() {
+            fetch('/api/mobile_info')
+            .then(res => res.json())
+            .then(info => {
+                document.getElementById('qrModalImg').src = info.qr_url;
+                document.getElementById('qrModalUrl').textContent = info.url;
+                document.getElementById('qrModal').style.display = 'flex';
+            })
+            .catch(err => {
+                document.getElementById('qrModal').style.display = 'flex';
+            });
+        }
+
+        function closeQrModal(e) {
+            document.getElementById('qrModal').style.display = 'none';
         }
 
         function copyCodeBlock(btnEl) {
@@ -772,7 +866,7 @@
             ctx.fill();
 
             const outerSphereVoiceScale = 1.0 + (voicePulseScale - 1.0) * 0.40;
-            const R = 250 * outerSphereVoiceScale;
+            const R = (canvas.width < 768 ? 160 : 250) * outerSphereVoiceScale;
             const focalLength = 360;
 
             const projectedDots = [];
@@ -892,9 +986,7 @@
 
         function formatLogContent(text) {
             if (!text) return '';
-            // Escape HTML tags to prevent XSS
             let clean = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            // Attach a sleek floating [ 📋 COPY PROMPT ] button ONLY whenever a prompt/code block appears
             clean = clean.replace(/```(?:markdown|python|html|css|javascript|js|json)?\s*([\s\S]*?)```/g, 
                 '<div class="code-block-wrapper"><button class="copy-prompt-btn" onclick="copyCodeBlock(this)">[ 📋 COPY PROMPT ]</button><code-block>$1</code-block></div>');
             return clean;
@@ -928,7 +1020,6 @@
             const bodySpan = row.querySelector('.log-body');
             const cursorSpan = row.querySelector('.typing-cursor');
             
-            // Clean text speech string for web synthesis
             const cleanSpeechText = text.replace(/```[\s\S]*?```/g, "Master prompt generated. Click copy prompt to copy.").replace(/`[^`]+`/g, "");
 
             if ('speechSynthesis' in window) {
@@ -954,7 +1045,6 @@
                     feed.scrollTop = feed.scrollHeight;
                 };
 
-                // Trigger voice-synced light sphere expansion
                 isSpeaking = true;
                 window.speechSynthesis.speak(utterance);
                 bodySpan.innerHTML = formatLogContent(text);
@@ -1068,11 +1158,34 @@
             }
         }
 
+        // Auto-fetch mobile info to display local Wi-Fi IP on status bar
+        fetch('/api/mobile_info')
+        .then(res => res.json())
+        .then(info => {
+            document.getElementById('wifi-ip').textContent = `${info.ip}:${info.port}`;
+        })
+        .catch(err => {});
+
+        let lastSyncLogCount = 0;
         setInterval(() => {
             fetch('/api/telemetry')
             .then(res => res.json())
             .then(data => updateTelemetry(data));
-        }, 4000);
+
+            fetch('/api/sync_logs')
+            .then(res => res.json())
+            .then(data => {
+                if (data.logs && data.logs.length > lastSyncLogCount) {
+                    const newLogs = data.logs.slice(lastSyncLogCount);
+                    newLogs.forEach(entry => {
+                        appendUserLog(entry.command);
+                        speakAndTypeBuddyLog(entry.response);
+                    });
+                    lastSyncLogCount = data.logs.length;
+                }
+            })
+            .catch(err => {});
+        }, 3000);
     </script>
 </body>
 </html>
