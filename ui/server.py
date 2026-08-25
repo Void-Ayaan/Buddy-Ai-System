@@ -48,6 +48,7 @@ from tools.prompt_master import create_master_prompt
 from tools.qr_tools import get_mobile_connect_info
 from tools.phone_bridge import initiate_mobile_audio_call
 from tools.twilio_call import make_real_cellular_call
+from tools.offline_ring import trigger_offline_local_ring, trigger_offline_phone_link
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -135,8 +136,7 @@ def execute_command_string(user_input):
         if action == "make_master_prompt":
             result = create_master_prompt(payload)
         elif action == "connect_mobile_audio":
-            call_info = initiate_mobile_audio_call(PORT)
-            result = call_info["text"]
+            result = trigger_offline_local_ring(PORT)
         elif action == "learn_topic":
             result = learn_topic_from_internet(payload)
         elif action == "save_code_desktop":
