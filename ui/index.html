@@ -1156,17 +1156,19 @@
                 };
 
                 recognition.onerror = (err) => {
-                    appendUserLog('[ 🎙️ RECORDING VIA SERVER MIC... ]');
-                    triggerServerMic();
+                    openMobileVoiceModal();
                 };
 
                 try {
                     recognition.start();
                     return;
-                } catch(e) {}
+                } catch(e) {
+                    openMobileVoiceModal();
+                    return;
+                }
             }
 
-            triggerServerMic();
+            openMobileVoiceModal();
         }
 
         function triggerServerMic() {
@@ -1266,7 +1268,39 @@
                 }
             })
             .catch(err => {});
-        }, 3000);
+        function openMobileVoiceModal() {
+            document.getElementById('mobileVoiceModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('mobileModalInput').focus();
+            }, 100);
+        }
+
+        function closeMobileVoiceModal() {
+            document.getElementById('mobileVoiceModal').style.display = 'none';
+        }
+
+        function submitMobileVoiceModal() {
+            const val = document.getElementById('mobileModalInput').value.trim();
+            if (val) {
+                document.getElementById('cmd-input').value = val;
+                sendCmd();
+            }
+            closeMobileVoiceModal();
+            document.getElementById('mobileModalInput').value = '';
+        }
     </script>
+
+    <!-- MOBILE VOICE & TEXT INPUT MODAL OVERLAY -->
+    <div id="mobileVoiceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:999999; flex-direction:column; justify-content:center; align-items:center; padding:20px;">
+        <div style="background:rgba(10,15,25,0.95); border:2px solid #00f3ff; border-radius:12px; padding:24px; width:100%; max-width:360px; text-align:center; box-shadow:0 0 40px rgba(0,243,255,0.6);">
+            <div style="font-family:'Orbitron'; font-size:16px; color:#00f3ff; font-weight:800; margin-bottom:10px;">🎤 MOBILE VOICE COMMAND</div>
+            <div style="font-family:'Share Tech Mono'; font-size:12px; color:#ffb700; margin-bottom:16px;">Speak or type your command below:</div>
+            <input type="text" id="mobileModalInput" style="width:100%; height:48px; background:#000; border:1px solid #00f3ff; color:#00f3ff; padding:10px; font-family:'Share Tech Mono'; font-size:15px; border-radius:6px; margin-bottom:16px;" placeholder="TYPE OR SPEAK VOICE COMMAND..." onkeydown="if(event.key==='Enter') submitMobileVoiceModal()">
+            <div style="display:flex; gap:10px;">
+                <button onclick="closeMobileVoiceModal()" style="flex:1; height:44px; background:#ff2a5f; border:none; color:#fff; font-family:'Orbitron'; font-weight:700; border-radius:6px; cursor:pointer;">CANCEL</button>
+                <button onclick="submitMobileVoiceModal()" style="flex:1; height:44px; background:#00f3ff; border:none; color:#000; font-family:'Orbitron'; font-weight:800; border-radius:6px; cursor:pointer;">SEND</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
