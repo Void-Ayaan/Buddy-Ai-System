@@ -53,13 +53,13 @@
 
         /* FULL-SCREEN CENTRALIZED BACKGROUND SWARM CANVAS */
         canvas#bgSwarmCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
             background: #000000;
         }
 
@@ -850,6 +850,11 @@
         let voicePulseTarget = 1.0;
 
         function drawBackgroundSwarm() {
+            if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
