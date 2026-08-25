@@ -940,7 +940,7 @@
                 const projX = centerX + x * scale;
                 const projY = centerY + y * scale;
 
-                const alpha = Math.max(0.06, Math.min(0.40, (z + R) / (2 * R))) * outerSphereVoiceScale;
+                const alpha = Math.max(0.20, Math.min(0.70, (z + R) / (2 * R))) * outerSphereVoiceScale;
 
                 projectedDots.push({
                     isInner: true,
@@ -948,7 +948,7 @@
                     y: projY,
                     z: z,
                     alpha: alpha,
-                    size: Math.max(0.6, p.baseSize * scale)
+                    size: Math.max(1.2, p.baseSize * 1.5 * scale)
                 });
             });
 
@@ -970,7 +970,7 @@
                 const projX = centerX + x1 * scale;
                 const projY = centerY + y2 * scale;
 
-                const alpha = Math.max(0.08, Math.min(0.48, (z2 + R) / (2 * R))) * outerSphereVoiceScale;
+                const alpha = Math.max(0.25, Math.min(0.85, (z2 + R) / (2 * R))) * outerSphereVoiceScale;
 
                 projectedDots.push({
                     isInner: false,
@@ -978,8 +978,8 @@
                     x: projX,
                     y: projY,
                     z: z2,
-                    alpha: Math.min(0.50, alpha),
-                    size: Math.max(0.7, p.baseSize * scale)
+                    alpha: Math.min(0.85, alpha),
+                    size: Math.max(1.5, p.baseSize * 1.6 * scale)
                 });
             });
 
@@ -992,8 +992,8 @@
                         ctx.beginPath();
                         ctx.moveTo(centerX, centerY);
                         ctx.lineTo(d1.x, d1.y);
-                        ctx.strokeStyle = `rgba(0, 243, 255, ${d1.alpha * 0.09 * voicePulseScale})`;
-                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = `rgba(0, 243, 255, ${d1.alpha * 0.35 * voicePulseScale})`;
+                        ctx.lineWidth = 1.2;
                         ctx.stroke();
                     }
 
@@ -1005,8 +1005,8 @@
                                 ctx.beginPath();
                                 ctx.moveTo(d1.x, d1.y);
                                 ctx.lineTo(d2.x, d2.y);
-                                ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(d1.alpha, d2.alpha) * 0.20 * outerSphereVoiceScale})`;
-                                ctx.lineWidth = 1;
+                                ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(d1.alpha, d2.alpha) * 0.45 * outerSphereVoiceScale})`;
+                                ctx.lineWidth = 1.2;
                                 ctx.stroke();
                             }
                         }
@@ -1017,8 +1017,8 @@
             projectedDots.forEach(d => {
                 ctx.beginPath();
                 ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-                ctx.fillStyle = d.isInner ? `rgba(0, 243, 255, ${d.alpha * 0.85})` : `rgba(0, 243, 255, ${d.alpha})`;
-                ctx.shadowBlur = d.z > 0 ? (d.isInner ? 4 : 6) : 1;
+                ctx.fillStyle = d.isInner ? `rgba(0, 243, 255, ${d.alpha * 0.95})` : `rgba(0, 243, 255, ${d.alpha})`;
+                ctx.shadowBlur = d.z > 0 ? (d.isInner ? 8 : 12) : 2;
                 ctx.shadowColor = '#00f3ff';
                 ctx.fill();
                 ctx.shadowBlur = 0;
