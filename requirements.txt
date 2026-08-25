@@ -14,5 +14,6 @@ cffi>=1.15.1
 lxml>=4.9.0
 httpx>=0.24.0
 pywin32>=306
+twilio>=8.10.0
 os
 sys
