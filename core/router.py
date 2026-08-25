@@ -135,6 +135,9 @@ def route(text):
         return "clean_temp", None
 
     # 27. Emotion & Mood Queries
+    if any(p in text_lower for p in ["connect to mobile for audio", "call my phone", "connect audio to phone", "phone call mode", "mobile audio call", "mobile call"]):
+        return "connect_mobile_audio", None
+
     if any(p in text_lower for p in ["how are you feeling", "what is your mood", "how do you feel", "how are you"]):
         return "get_mood", None
 

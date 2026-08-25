@@ -46,6 +46,7 @@ from tools.code_file_tools import save_code_to_desktop, locate_last_saved_file
 from tools.learner_tools import learn_topic_from_internet
 from tools.prompt_master import create_master_prompt
 from tools.qr_tools import get_mobile_connect_info
+from tools.phone_bridge import initiate_mobile_audio_call
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -132,6 +133,9 @@ def execute_command_string(user_input):
 
         if action == "make_master_prompt":
             result = create_master_prompt(payload)
+        elif action == "connect_mobile_audio":
+            call_info = initiate_mobile_audio_call(PORT)
+            result = call_info["text"]
         elif action == "learn_topic":
             result = learn_topic_from_internet(payload)
         elif action == "save_code_desktop":
@@ -328,6 +332,12 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             with open(os.path.join(UI_DIR, "index.html"), "rb") as f:
+                self.wfile.write(f.read())
+        elif self.path == "/phone_call.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            with open(os.path.join(UI_DIR, "phone_call.html"), "rb") as f:
                 self.wfile.write(f.read())
         elif self.path == "/api/telemetry":
             self.send_response(200)
