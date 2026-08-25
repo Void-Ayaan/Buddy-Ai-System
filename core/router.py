@@ -1,9 +1,7 @@
 import re
-from core.fuzzy_corrector import normalize_fuzzy_input
 
 def route(text):
-    text_fuzzy = normalize_fuzzy_input(text)
-    text_lower = re.sub(r"^(?:buddy|hey\s+buddy|hello\s+buddy)\s+", "", text_fuzzy.lower().strip(), flags=re.IGNORECASE).strip()
+    text_lower = text.lower().strip()
 
     # 0a. Master Prompt Engineering Architect Protocol
     if any(p in text_lower for p in ["make prompt", "create prompt", "master prompt", "build prompt", "write prompt", "prompt engineering", "listen and make prompt"]):
@@ -78,7 +76,11 @@ def route(text):
     if text_lower.startswith("translate ") or " translate " in text_lower:
         return "translate_phrase", text
 
-    # 14. Buddy Vision & Camera Control
+    # 14. Buddy Vision & Camera Control (Single Snapshot & Continuous 24/7 Live Vision Eye)
+    if any(p in text_lower for p in ["live vision", "continuous vision", "watch through camera", "keep watching", "turn on camera", "turn on live vision", "activate live vision", "live camera mode"]):
+        return "toggle_live_vision", True
+    if any(p in text_lower for p in ["stop live vision", "turn off live vision", "close camera"]):
+        return "toggle_live_vision", False
     if any(p in text_lower for p in ["see this", "look at this", "what do you see", "what's in front of camera", "what is in front of camera", "take picture", "take a picture", "take photo", "take a photo", "camera vision", "open camera", "what's inside", "what is inside", "whats inside", "whst's inside", "whsts inside", "what's in the image", "what is in the image", "whats in the image", "whst's in the image", "read image", "describe image", "read text in image", "what do you see in the photo", "what is in the photo", "give details of image", "give details of photo", "give image details", "details of image", "tell me about image", "tell me about photo", "show details of image"]):
         return "capture_vision", None
 
@@ -136,18 +138,7 @@ def route(text):
     if any(p in text_lower for p in ["clean temp", "clean temp files", "clean system", "free space", "disk cleanup", "clean junk"]):
         return "clean_temp", None
 
-    # 27. PC Unlock & Power Controls
-    if any(p in text_lower for p in ["unlock pc", "unlock my pc", "unlock computer", "unlock laptop", "unlock system"]):
-        payload = re.sub(r"^(?:buddy\s+)?(?:unlock\s+my\s+pc|unlock\s+pc|unlock\s+computer|unlock\s+laptop|unlock\s+system)\s*", "", text, flags=re.IGNORECASE).strip()
-        return "unlock_pc", payload
-
-    if text_lower.startswith("password ") or text_lower.startswith("pin "):
-        payload = re.sub(r"^(?:password|pin)\s+", "", text, flags=re.IGNORECASE).strip()
-        return "submit_password", payload
-
-    if any(p in text_lower for p in ["connect to mobile for audio", "call my phone", "connect audio to phone", "phone call mode", "mobile audio call", "mobile call"]):
-        return "connect_mobile_audio", None
-
+    # 27. Emotion & Mood Queries
     if any(p in text_lower for p in ["how are you feeling", "what is your mood", "how do you feel", "how are you"]):
         return "get_mood", None
 

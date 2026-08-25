@@ -1,6 +1,7 @@
 import sys
 import os
 
+# Fix Python path so core and tools modules are found regardless of working directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
@@ -15,7 +16,7 @@ import subprocess
 from core.pipeline import process_query_pipeline, PIPELINE_ACTION, PIPELINE_QUESTION
 from agents.swarm_master import swarm
 from core.self_upgrader import self_upgrade
-from core.emotions import detect_emotion_from_input, get_current_emotion
+from core.emotions import detect_emotion_from_input, get_current_emotion, format_emotional_response
 from tools.help_tools import get_capabilities_guide
 from tools.news_tools import get_latest_news
 from tools.speed_test_tools import run_quick_speed_test
@@ -34,7 +35,7 @@ from tools.translator_tools import translate_phrase
 from tools.jarvis_hud import run_buddy_system_scan
 from tools.jarvis_workflows import activate_coding_mode, activate_work_mode, activate_relax_mode
 from tools.cleanup_tools import clean_temp_files
-from tools.camera_tools import capture_vision, get_last_camera_b64
+from tools.camera_tools import capture_vision, get_last_camera_b64, toggle_live_vision
 from tools.health_tools import run_health_check
 from tools.speed_tools import check_website_status
 from tools.battery_tools import get_battery_details
@@ -45,11 +46,6 @@ from tools.calc_tools import evaluate_math
 from tools.code_file_tools import save_code_to_desktop, locate_last_saved_file
 from tools.learner_tools import learn_topic_from_internet
 from tools.prompt_master import create_master_prompt
-from tools.qr_tools import get_mobile_connect_info
-from tools.phone_bridge import initiate_mobile_audio_call
-from tools.twilio_call import make_real_cellular_call
-from tools.offline_ring import trigger_offline_local_ring, trigger_offline_phone_link
-from tools.unlock_pc import unlock_windows_pc, submit_unlock_password, is_awaiting_unlock_password
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -80,13 +76,11 @@ from core.llm import ask_ai
 from voice.tts import speak, set_web_mode
 from voice.listener import listen_from_microphone
 
+# Mute server SAPI voice so browser speaks ONCE with 100% exact word-synced captions
 set_web_mode(True)
 
 PORT = 5000
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Global Multi-Device Event Sync Log Buffer
-SYNC_LOG_BUFFER = []
 
 def open_standalone_app_window(url):
     """Launch HUD in Full Screen Standalone App Window without tabs, address bars, or URL clutter."""
@@ -125,14 +119,9 @@ def get_telemetry_json():
 
 def execute_command_string(user_input):
     mood = detect_emotion_from_input(user_input)
+    pipeline_type, action, payload = process_query_pipeline(user_input)
 
-    # Stateful interception: If Buddy is waiting for lock screen password, treat next input as password
-    if is_awaiting_unlock_password() and user_input.strip().lower() not in ["cancel", "stop", "exit"]:
-        result = submit_unlock_password(user_input)
-        return result, False
-
-    pipeline_type, action, payload, latency_ms = process_query_pipeline(user_input)
-
+    # Track active agent workflow in real-time
     swarm.set_active_workflow(action)
     should_compact = False
 
@@ -142,12 +131,6 @@ def execute_command_string(user_input):
 
         if action == "make_master_prompt":
             result = create_master_prompt(payload)
-        elif action == "unlock_pc":
-            result = unlock_windows_pc(payload)
-        elif action == "submit_password":
-            result = submit_unlock_password(payload)
-        elif action == "connect_mobile_audio":
-            result = trigger_offline_local_ring(PORT)
         elif action == "learn_topic":
             result = learn_topic_from_internet(payload)
         elif action == "save_code_desktop":
@@ -180,6 +163,8 @@ def execute_command_string(user_input):
             result = run_quick_speed_test()
         elif action == "translate_phrase":
             result = translate_phrase(payload)
+        elif action == "toggle_live_vision":
+            result = toggle_live_vision(payload)
         elif action == "capture_vision":
             result = capture_vision()
         elif action == "battery_details":
@@ -330,11 +315,6 @@ def execute_command_string(user_input):
             result = ask_ai(user_input)
             save_cached_response(user_input, result)
 
-    # Append to global multi-device log buffer for real-time synchronization
-    SYNC_LOG_BUFFER.append({"command": user_input, "response": result})
-    if len(SYNC_LOG_BUFFER) > 50:
-        SYNC_LOG_BUFFER.pop(0)
-
     return result, should_compact
 
 class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
@@ -345,27 +325,11 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             with open(os.path.join(UI_DIR, "index.html"), "rb") as f:
                 self.wfile.write(f.read())
-        elif self.path == "/phone_call.html":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.end_headers()
-            with open(os.path.join(UI_DIR, "phone_call.html"), "rb") as f:
-                self.wfile.write(f.read())
         elif self.path == "/api/telemetry":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(get_telemetry_json()).encode("utf-8"))
-        elif self.path == "/api/mobile_info":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(get_mobile_connect_info(PORT)).encode("utf-8"))
-        elif self.path == "/api/sync_logs":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"logs": SYNC_LOG_BUFFER}).encode("utf-8"))
         elif self.path.startswith("/camera_view.jpg"):
             self.send_response(200)
             self.send_header("Content-Type", "image/jpeg")
@@ -378,11 +342,6 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(f.read())
             else:
                 self.wfile.write(b"")
-        elif self.path.startswith("/favicon.ico"):
-            self.send_response(200)
-            self.send_header("Content-Type", "image/x-icon")
-            self.end_headers()
-            self.wfile.write(b"")
         else:
             super().do_GET()
 
@@ -438,22 +397,18 @@ def start_ui_server():
     target_port = PORT
     for candidate_port in [PORT, 5001, 5002]:
         try:
-            server = ReusableTCPServer(("0.0.0.0", candidate_port), CyberHUDHandler)
+            server = ReusableTCPServer(("127.0.0.1", candidate_port), CyberHUDHandler)
             target_port = candidate_port
             break
         except OSError:
             continue
 
     if not server:
-        server = ReusableTCPServer(("0.0.0.0", PORT), CyberHUDHandler)
+        # If all candidates fail, force bind with allow_reuse_address
+        server = ReusableTCPServer(("127.0.0.1", PORT), CyberHUDHandler)
         target_port = PORT
 
-    mobile_info = get_mobile_connect_info(target_port)
-    print("\n=======================================================")
-    print(f" [ BUDDY CYBER HUD LOCAL: http://127.0.0.1:{target_port} ]")
-    print(f" [ 📱 MULTI-DEVICE WI-FI CONTROL LINK: {mobile_info['url']} ]")
-    print("=======================================================\n")
-
+    print(f"\n[ BUDDY CYBER HUD RUNNING AT http://127.0.0.1:{target_port} ]\n")
     open_standalone_app_window(f"http://127.0.0.1:{target_port}")
     server.serve_forever()
 
