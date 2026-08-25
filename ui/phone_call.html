@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BUDDY VOICE CALL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #000000;
+            color: #d0e2f5;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 20px;
+            overflow: hidden;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: #00f3ff;
+            text-align: center;
+            text-shadow: 0 0 12px rgba(0, 243, 255, 0.5);
+        }
+
+        .call-status {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            color: #ffb700;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        .call-timer {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+
+        /* CENTRAL GLOWING AUDIO CALL ORB */
+        .orb-wrapper {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto 0;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0, 243, 255, 0.08);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+
+        .audio-orb {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #00f3ff 40%, rgba(0, 243, 255, 0.1) 80%, rgba(0, 0, 0, 0) 100%);
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.8), 0 0 80px rgba(0, 243, 255, 0.3);
+            transition: transform 0.15s ease-out;
+            cursor: pointer;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(0.95); opacity: 0.4; }
+            50% { transform: scale(1.15); opacity: 0.9; }
+            100% { transform: scale(0.95); opacity: 0.4; }
+        }
+
+        .speech-transcript {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            color: #00f3ff;
+            text-align: center;
+            max-width: 320px;
+            min-height: 48px;
+            padding: 10px;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            word-break: break-word;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .call-btn {
+            flex: 1;
+            padding: 16px 0;
+            border-radius: 30px;
+            border: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-talk {
+            background: #00f3ff;
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        .btn-end {
+            background: #ff2a5f;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 42, 95, 0.5);
+        }
+
+        .btn-talk:active { transform: scale(0.95); }
+        .btn-end:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div>
+        <div class="header-title">BUDDY AI VOICE PHONE CALL</div>
+        <div class="call-status" id="callStatus">CONNECTED • AUDIO-ONLY STREAM</div>
+        <div class="call-timer" id="timer">00:00</div>
+    </div>
+
+    <div class="orb-wrapper">
+        <div class="pulse-ring" id="pulseRing"></div>
+        <div class="audio-orb" id="orb" onclick="toggleListening()"></div>
+    </div>
+
+    <div class="speech-transcript" id="transcript">
+        Tap "TALK TO BUDDY" or tap the central orb to speak...
+    </div>
+
+    <div class="controls-row">
+        <button class="call-btn btn-talk" id="talkBtn" onclick="startMobileVoiceInput()">
+            🎤 TAP TO TALK
+        </button>
+        <button class="call-btn btn-end" onclick="endPhoneCall()">
+            🔴 END CALL
+        </button>
+    </div>
+
+    <script>
+        let seconds = 0;
+        let timerInterval = setInterval(() => {
+            seconds++;
+            const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const secs = String(seconds % 60).padStart(2, '0');
+            document.getElementById('timer').textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        let recognition = null;
+        let isSpeaking = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                document.getElementById('callStatus').textContent = 'LISTENING TO PHONE MIC...';
+                document.getElementById('callStatus').style.color = '#00f3ff';
+                document.getElementById('orb').style.transform = 'scale(1.25)';
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                document.getElementById('transcript').textContent = `YOU: "${text}"`;
+                sendPhoneVoiceCommand(text);
+            };
+
+            recognition.onerror = () => {
+                document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO-ONLY STREAM';
+                document.getElementById('callStatus').style.color = '#ffb700';
+                document.getElementById('orb').style.transform = 'scale(1.0)';
+            };
+
+            recognition.onend = () => {
+                document.getElementById('orb').style.transform = 'scale(1.0)';
+            };
+        }
+
+        function startMobileVoiceInput() {
+            if (recognition) {
+                try { recognition.start(); } catch(e) {}
+            } else {
+                const text = prompt("Your Voice Message to Buddy:");
+                if (text) sendPhoneVoiceCommand(text);
+            }
+        }
+
+        function toggleListening() {
+            startMobileVoiceInput();
+        }
+
+        function speakPhoneOutput(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const cleanText = text.replace(/```[\s\S]*?```/g, "Master prompt created.").replace(/`[^`]+`/g, "");
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.rate = 1.05;
+
+                utterance.onstart = () => {
+                    document.getElementById('callStatus').textContent = 'BUDDY SPEAKING TO PHONE...';
+                    document.getElementById('callStatus').style.color = '#00ff9d';
+                    document.getElementById('orb').style.transform = 'scale(1.35)';
+                };
+
+                utterance.onend = () => {
+                    document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO-ONLY STREAM';
+                    document.getElementById('callStatus').style.color = '#ffb700';
+                    document.getElementById('orb').style.transform = 'scale(1.0)';
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function sendPhoneVoiceCommand(cmd) {
+            fetch('/api/command', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({command: cmd})
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('transcript').textContent = `BUDDY: "${data.response}"`;
+                speakPhoneOutput(data.response);
+            })
+            .catch(err => {
+                document.getElementById('transcript').textContent = "Connection error with core server.";
+            });
+        }
+
+        function endPhoneCall() {
+            clearInterval(timerInterval);
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            document.body.innerHTML = `
+                <div style="margin: auto; text-align: center;">
+                    <div style="font-family: 'Orbitron'; font-size: 18px; color: #ff2a5f;">CALL TERMINATED</div>
+                    <div style="font-family: 'Share Tech Mono'; margin-top: 10px; color: #888;">Duration: ${document.getElementById('timer').textContent}</div>
+                    <button style="margin-top: 20px; padding: 10px 20px; background: #00f3ff; border: none; font-family: 'Orbitron';" onclick="location.reload()">RECONNECT CALL</button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
