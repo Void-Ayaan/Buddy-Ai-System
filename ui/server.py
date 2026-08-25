@@ -49,7 +49,7 @@ from tools.qr_tools import get_mobile_connect_info
 from tools.phone_bridge import initiate_mobile_audio_call
 from tools.twilio_call import make_real_cellular_call
 from tools.offline_ring import trigger_offline_local_ring, trigger_offline_phone_link
-from tools.unlock_pc import unlock_windows_pc, submit_unlock_password
+from tools.unlock_pc import unlock_windows_pc, submit_unlock_password, is_awaiting_unlock_password
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -125,6 +125,12 @@ def get_telemetry_json():
 
 def execute_command_string(user_input):
     mood = detect_emotion_from_input(user_input)
+
+    # Stateful interception: If Buddy is waiting for lock screen password, treat next input as password
+    if is_awaiting_unlock_password() and user_input.strip().lower() not in ["cancel", "stop", "exit"]:
+        result = submit_unlock_password(user_input)
+        return result, False
+
     pipeline_type, action, payload = process_query_pipeline(user_input)
 
     swarm.set_active_workflow(action)
