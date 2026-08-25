@@ -1,7 +1,6 @@
 import sys
 import os
 
-# Fix Python path so core and tools modules are found regardless of working directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
@@ -16,7 +15,7 @@ import subprocess
 from core.pipeline import process_query_pipeline, PIPELINE_ACTION, PIPELINE_QUESTION
 from agents.swarm_master import swarm
 from core.self_upgrader import self_upgrade
-from core.emotions import detect_emotion_from_input, get_current_emotion, format_emotional_response
+from core.emotions import detect_emotion_from_input, get_current_emotion
 from tools.help_tools import get_capabilities_guide
 from tools.news_tools import get_latest_news
 from tools.speed_test_tools import run_quick_speed_test
@@ -46,6 +45,7 @@ from tools.calc_tools import evaluate_math
 from tools.code_file_tools import save_code_to_desktop, locate_last_saved_file
 from tools.learner_tools import learn_topic_from_internet
 from tools.prompt_master import create_master_prompt
+from tools.qr_tools import get_mobile_connect_info
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -76,11 +76,13 @@ from core.llm import ask_ai
 from voice.tts import speak, set_web_mode
 from voice.listener import listen_from_microphone
 
-# Mute server SAPI voice so browser speaks ONCE with 100% exact word-synced captions
 set_web_mode(True)
 
 PORT = 5000
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Global Multi-Device Event Sync Log Buffer
+SYNC_LOG_BUFFER = []
 
 def open_standalone_app_window(url):
     """Launch HUD in Full Screen Standalone App Window without tabs, address bars, or URL clutter."""
@@ -121,7 +123,6 @@ def execute_command_string(user_input):
     mood = detect_emotion_from_input(user_input)
     pipeline_type, action, payload = process_query_pipeline(user_input)
 
-    # Track active agent workflow in real-time
     swarm.set_active_workflow(action)
     should_compact = False
 
@@ -313,6 +314,11 @@ def execute_command_string(user_input):
             result = ask_ai(user_input)
             save_cached_response(user_input, result)
 
+    # Append to global multi-device log buffer for real-time synchronization
+    SYNC_LOG_BUFFER.append({"command": user_input, "response": result})
+    if len(SYNC_LOG_BUFFER) > 50:
+        SYNC_LOG_BUFFER.pop(0)
+
     return result, should_compact
 
 class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
@@ -328,6 +334,16 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(get_telemetry_json()).encode("utf-8"))
+        elif self.path == "/api/mobile_info":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(get_mobile_connect_info(PORT)).encode("utf-8"))
+        elif self.path == "/api/sync_logs":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"logs": SYNC_LOG_BUFFER}).encode("utf-8"))
         elif self.path.startswith("/camera_view.jpg"):
             self.send_response(200)
             self.send_header("Content-Type", "image/jpeg")
@@ -395,18 +411,22 @@ def start_ui_server():
     target_port = PORT
     for candidate_port in [PORT, 5001, 5002]:
         try:
-            server = ReusableTCPServer(("127.0.0.1", candidate_port), CyberHUDHandler)
+            server = ReusableTCPServer(("0.0.0.0", candidate_port), CyberHUDHandler)
             target_port = candidate_port
             break
         except OSError:
             continue
 
     if not server:
-        # If all candidates fail, force bind with allow_reuse_address
-        server = ReusableTCPServer(("127.0.0.1", PORT), CyberHUDHandler)
+        server = ReusableTCPServer(("0.0.0.0", PORT), CyberHUDHandler)
         target_port = PORT
 
-    print(f"\n[ BUDDY CYBER HUD RUNNING AT http://127.0.0.1:{target_port} ]\n")
+    mobile_info = get_mobile_connect_info(target_port)
+    print("\n=======================================================")
+    print(f" [ BUDDY CYBER HUD LOCAL: http://127.0.0.1:{target_port} ]")
+    print(f" [ 📱 MULTI-DEVICE WI-FI CONTROL LINK: {mobile_info['url']} ]")
+    print("=======================================================\n")
+
     open_standalone_app_window(f"http://127.0.0.1:{target_port}")
     server.serve_forever()
 
