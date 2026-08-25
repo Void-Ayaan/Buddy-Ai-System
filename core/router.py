@@ -1,7 +1,7 @@
 import re
 
 def route(text):
-    text_lower = text.lower().strip()
+    text_lower = re.sub(r"^(?:buddy|hey\s+buddy|hello\s+buddy)\s+", "", text.lower().strip(), flags=re.IGNORECASE).strip()
 
     # 0a. Master Prompt Engineering Architect Protocol
     if any(p in text_lower for p in ["make prompt", "create prompt", "master prompt", "build prompt", "write prompt", "prompt engineering", "listen and make prompt"]):
@@ -135,8 +135,8 @@ def route(text):
         return "clean_temp", None
 
     # 27. PC Unlock & Power Controls
-    if text_lower.startswith("unlock pc") or text_lower.startswith("unlock my pc") or text_lower.startswith("unlock computer") or text_lower.startswith("unlock laptop") or text_lower.startswith("unlock system"):
-        payload = re.sub(r"^(?:unlock\s+my\s+pc|unlock\s+pc|unlock\s+computer|unlock\s+laptop|unlock\s+system)\s*", "", text, flags=re.IGNORECASE).strip()
+    if any(p in text_lower for p in ["unlock pc", "unlock my pc", "unlock computer", "unlock laptop", "unlock system"]):
+        payload = re.sub(r"^(?:buddy\s+)?(?:unlock\s+my\s+pc|unlock\s+pc|unlock\s+computer|unlock\s+laptop|unlock\s+system)\s*", "", text, flags=re.IGNORECASE).strip()
         return "unlock_pc", payload
 
     if text_lower.startswith("password ") or text_lower.startswith("pin "):
