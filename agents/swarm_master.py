@@ -9,9 +9,10 @@ from agents.media_agent import MediaAgent
 from agents.search_agent import SearchAgent
 from agents.workflow_agent import WorkflowAgent
 from agents.learner_agent import LearnerAgent
+from agents.hand_agent import HandAgent
 
 class SwarmMaster:
-    """Master Orchestrator managing real-time AI Agent Swarm topology across 11 sub-agents."""
+    """Master Orchestrator managing real-time AI Agent Swarm topology across 12 sub-agents."""
     def __init__(self):
         self.router = RouterAgent()
         self.oracle = OracleAgent()
@@ -24,15 +25,19 @@ class SwarmMaster:
         self.search = SearchAgent()
         self.workflow = WorkflowAgent()
         self.learner = LearnerAgent()
+        self.hand = HandAgent()
         self.active_agent = "AGENT-01"
         self.last_target = "ROUTER-NODE"
 
     def set_active_workflow(self, action):
         """Map every user intent action to its corresponding active sub-agent node."""
-        if action in ["learn_topic", "make_master_prompt", "word_definition", "get_capabilities"]:
+        if action in ["hand_control", "toggle_hand_controller"]:
+            self.active_agent = "AGENT-12"
+            self.last_target = "HAND-KINEMATIK"
+        elif action in ["learn_topic", "make_master_prompt", "word_definition", "get_capabilities"]:
             self.active_agent = "AGENT-11"
             self.last_target = "KNOWLEDGE-LEARNER"
-        elif action in ["capture_vision"]:
+        elif action in ["capture_vision", "toggle_live_vision"]:
             self.active_agent = "AGENT-03"
             self.last_target = "VISION-OPTIK"
         elif action in ["chat", "get_mood", "remember", "recall", "get_joke", "get_fact", "get_quote"]:
@@ -64,7 +69,7 @@ class SwarmMaster:
             self.last_target = "ROUTER-NODE"
 
     def get_real_swarm_telemetry(self):
-        """Return real-time statuses for all 11 sub-agents."""
+        """Return real-time statuses for all 12 sub-agents."""
         agents = [
             {"id": "AGENT-01", "name": "ROUTER", "status": "WORKING" if self.active_agent == "AGENT-01" else "IDLE"},
             {"id": "AGENT-02", "name": "ORACLE", "status": "WORKING" if self.active_agent == "AGENT-02" else "IDLE"},
@@ -77,6 +82,7 @@ class SwarmMaster:
             {"id": "AGENT-09", "name": "SEARCH", "status": "WORKING" if self.active_agent == "AGENT-09" else "IDLE"},
             {"id": "AGENT-10", "name": "WORKFLOW", "status": "WORKING" if self.active_agent == "AGENT-10" else "IDLE"},
             {"id": "AGENT-11", "name": "LEARNER", "status": "WORKING" if self.active_agent == "AGENT-11" else "IDLE"},
+            {"id": "AGENT-12", "name": "HAND-KINEMATIK", "status": "WORKING" if self.active_agent == "AGENT-12" else "IDLE"},
         ]
         return {
             "agents": agents,

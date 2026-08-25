@@ -76,7 +76,11 @@ def route(text):
     if text_lower.startswith("translate ") or " translate " in text_lower:
         return "translate_phrase", text
 
-    # 14. Buddy Vision & Camera Control (Single Snapshot & Continuous 24/7 Live Vision Eye)
+    # 14. Buddy Vision & Hand Gesture Control
+    if any(p in text_lower for p in ["hand control", "gesture control", "pinch zoom", "hand gesture", "control with hand", "turn on hand control", "hand mode"]):
+        return "toggle_hand_controller", True
+    if any(p in text_lower for p in ["stop hand control", "turn off hand control", "close hand mode"]):
+        return "toggle_hand_controller", False
     if any(p in text_lower for p in ["live vision", "continuous vision", "watch through camera", "keep watching", "turn on camera", "turn on live vision", "activate live vision", "live camera mode"]):
         return "toggle_live_vision", True
     if any(p in text_lower for p in ["stop live vision", "turn off live vision", "close camera"]):
