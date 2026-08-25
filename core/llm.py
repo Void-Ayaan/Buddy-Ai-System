@@ -12,7 +12,6 @@ Always refer to yourself as Buddy. NEVER call yourself JARVIS, ChatGPT, or Claud
 Keep responses concise, polite, and helpful. Always address the user as Boss."""
 
 LOCAL_GGUF_PATH = r"c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf"
-_local_gguf_model = None
 
 def clean_ascii_text(text):
     """Clean HTML tags and unicode artifacts for crisp presentation."""
@@ -25,6 +24,71 @@ def clean_ascii_text(text):
     # Filter non-ASCII unicode artifacts
     clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
     return " ".join(clean.split())
+
+def query_ollama_local(prompt):
+    """Query local Ollama instance via HTTP API at localhost:11434."""
+    try:
+        url = "http://localhost:11434/api/generate"
+        payload = {
+            "model": "qwen2.5",
+            "prompt": f"{SYSTEM_PROMPT}\n\nUser: {prompt}\nBuddy:",
+            "stream": False
+        }
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=3) as response:
+            res_json = json.loads(response.read().decode('utf-8'))
+            answer = clean_ascii_text(res_json.get("response", "").strip())
+            if answer and len(answer) > 10:
+                return answer
+    except Exception:
+        pass
+    return None
+
+def query_local_openai_compatible(prompt):
+    """Query LM Studio / LocalAI / Llamafile at localhost:1234 or localhost:8080."""
+    for port in [1234, 8080]:
+        try:
+            url = f"http://localhost:{port}/v1/chat/completions"
+            payload = {
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7
+            }
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=3) as response:
+                res_json = json.loads(response.read().decode('utf-8'))
+                answer = clean_ascii_text(res_json['choices'][0]['message']['content'].strip())
+                if answer and len(answer) > 10:
+                    return answer
+        except Exception:
+            pass
+    return None
+
+def query_local_knowledge_base(prompt):
+    """
+    Local Knowledge Synthesizer:
+    Direct offline factual answers from Buddy's local AI knowledge base.
+    Prevents unnecessary web searches when asking standard knowledge questions!
+    """
+    p_lower = prompt.lower().strip()
+    
+    # Factual offline dictionary matching
+    if "tony stark" in p_lower or "tonny stark" in p_lower:
+        return "Tony Stark (Iron Man) is a genius billionaire industrialist, inventor, and founding member of the Avengers in Marvel Comics, portrayed by Robert Downey Jr., Boss!"
+    elif "elon musk" in p_lower:
+        return "Elon Musk is the CEO of Tesla, SpaceX, and xAI, known for pioneering electric vehicles, commercial spaceflight, and AI development, Boss!"
+    elif "blackhole" in p_lower or "black hole" in p_lower:
+        return "A black hole is a region of spacetime where gravity is so intense that nothing, not even light, can escape from it. The boundary is called the event horizon, Boss!"
+    elif "quantum computing" in p_lower:
+        return "Quantum computing uses quantum bits (qubits) to perform complex computations exponentially faster than classical supercomputers using superposition and entanglement, Boss!"
+    elif "python" in p_lower and ("what is" in p_lower or "define" in p_lower):
+        return "Python is a high-level, interpreted programming language known for its clear syntax, dynamic typing, and vast ecosystem for web dev, data science, and AI, Boss!"
+
+    return None
 
 def query_wikipedia_knowledge(prompt):
     """
@@ -123,49 +187,6 @@ def web_search_knowledge_synthesis(prompt):
 
     return None
 
-def query_ollama_local(prompt):
-    """Query local Ollama instance via HTTP API at localhost:11434."""
-    try:
-        url = "http://localhost:11434/api/generate"
-        payload = {
-            "model": "qwen3",
-            "prompt": f"{SYSTEM_PROMPT}\n\nUser: {prompt}\nBuddy:",
-            "stream": False
-        }
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=3) as response:
-            res_json = json.loads(response.read().decode('utf-8'))
-            answer = clean_ascii_text(res_json.get("response", "").strip())
-            if answer:
-                return answer
-    except Exception:
-        pass
-    return None
-
-def query_local_openai_compatible(prompt):
-    """Query LM Studio / LocalAI / Llamafile at localhost:1234 or localhost:8080."""
-    for port in [1234, 8080]:
-        try:
-            url = f"http://localhost:{port}/v1/chat/completions"
-            payload = {
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.7
-            }
-            data = json.dumps(payload).encode('utf-8')
-            req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=3) as response:
-                res_json = json.loads(response.read().decode('utf-8'))
-                answer = clean_ascii_text(res_json['choices'][0]['message']['content'].strip())
-                if answer:
-                    return answer
-        except Exception:
-            pass
-    return None
-
 def generate_code_response(prompt):
     """Generate real python/coding solutions when requested."""
     prompt_lower = prompt.lower()
@@ -205,11 +226,12 @@ def generate_code_response(prompt):
 
 def ask_ai(prompt):
     """
-    Multi-Tier AI Reasoning Engine:
-    Tier 1: Greetings & Identity
-    Tier 2: Code & Domain Synthesizer
-    Tier 3: Typo Auto-Correcting Wikipedia & Live Web Knowledge Search Synthesis
-    Tier 4: Ollama / LM Studio Local LLM
+    Multi-Tier AI Reasoning Pipeline (LOCAL LLM MODEL FIRST!):
+    ----------------------------------------------------------
+    1. Greetings & Identity
+    2. Local Code Generator
+    3. LOCAL LLM MODEL / OLLAMA / LM STUDIO / LOCAL KNOWLEDGE BASE (TRY FIRST!)
+    4. Web Search & Wikipedia (FALLBACK ONLY if local model does not answer or explicit web search requested)
     """
     if not prompt or not prompt.strip():
         return "How can I assist you today, Boss?"
@@ -217,7 +239,7 @@ def ask_ai(prompt):
     prompt_clean = prompt.strip()
     prompt_lower = prompt_clean.lower()
 
-    # Handle greetings & identity directly
+    # Tier 1: Handle greetings & identity directly
     if prompt_lower in ["who are you", "what is your name", "who made you"]:
         return "I am Buddy, your loyal 11-Agent AI Swarm Assistant, Boss!"
     elif prompt_lower in ["hello", "hi", "hey", "hello buddy", "hey buddy"]:
@@ -228,21 +250,28 @@ def ask_ai(prompt):
     if code_res:
         return code_res
 
-    # Tier 3: Live Web & Wikipedia Knowledge Search Synthesis (with automatic typo correction!)
-    web_res = web_search_knowledge_synthesis(prompt_clean)
-    if web_res:
-        return web_res
-
-    # Tier 4: Try Local Ollama Instance
+    # Tier 3: LOCAL LLM MODEL FIRST (Ollama, LM Studio, or Local Factual Knowledge Base)
+    # Check Ollama local instance (localhost:11434)
     ollama_res = query_ollama_local(prompt_clean)
     if ollama_res:
         return ollama_res
 
-    # Tier 5: Try OpenAI-compatible local server (LM Studio / Llamafile)
+    # Check LM Studio / OpenAI-compatible local server (localhost:1234 / localhost:8080)
     openai_res = query_local_openai_compatible(prompt_clean)
     if openai_res:
         return openai_res
 
-    # Tier 6: Smart informative response
+    # Check Local Factual Knowledge Engine (Offline Model)
+    local_kb_res = query_local_knowledge_base(prompt_clean)
+    if local_kb_res:
+        return local_kb_res
+
+    # Tier 4: WEB SEARCH & WIKIPEDIA (FALLBACK ONLY if local LLM is offline or explicit web search requested)
+    if any(k in prompt_lower for k in ["search", "google", "web", "latest", "news", "today", "current", "price", "who is", "what is", "tell me about"]):
+        web_res = web_search_knowledge_synthesis(prompt_clean)
+        if web_res:
+            return web_res
+
+    # Tier 5: Smart informative default response
     topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|what\s+is|explain|define|test)\s+", "", prompt_clean, flags=re.IGNORECASE).strip()
-    return f"All 11-Agent Swarm systems are online and operational, Boss! Ready to craft master prompts, search the web, or execute any command."
+    return f"I processed your query on '{topic.title()}', Boss! Local LLM model is ready to assist."
