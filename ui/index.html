@@ -467,15 +467,40 @@
         @media (max-width: 768px) {
             header {
                 padding: 10px 14px;
+            html, body {
+                overflow-y: auto !important;
+                height: auto !important;
+                min-height: 100vh;
+                touch-action: manipulation;
+                -webkit-overflow-scrolling: touch;
+            }
+            canvas#bgSwarmCanvas {
+                pointer-events: none !important;
+                z-index: 0 !important;
+            }
+            header {
+                padding: 10px 14px;
+                position: sticky;
+                top: 0;
+                background: rgba(0, 0, 0, 0.95);
+                z-index: 99999;
             }
             .hud-brand { font-size: 18px; letter-spacing: 2px; }
             .status-strip { display: none; }
 
+            .dock-toggle-btn {
+                min-height: 42px;
+                padding: 8px 12px;
+                font-size: 11px;
+                touch-action: manipulation;
+            }
+
             .hud-stage {
                 display: flex;
                 flex-direction: column;
-                padding: 6px 12px 14px 12px;
-                gap: 10px;
+                padding: 10px 10px 30px 10px;
+                gap: 12px;
+                min-height: calc(100vh - 60px);
             }
 
             .hud-panel:nth-child(1),
@@ -485,27 +510,47 @@
 
             .hud-panel.center-hud {
                 width: 100%;
-                height: 100%;
+                height: auto;
+                flex: 1;
+                z-index: 10;
             }
 
             .log-terminal {
-                max-height: calc(100vh - 180px);
-                min-height: 220px;
-                font-size: 12px;
+                max-height: 55vh;
+                min-height: 260px;
+                font-size: 13px;
+                line-height: 1.5;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+                user-select: text;
             }
 
             .hud-input-row {
                 gap: 8px;
+                margin-top: 10px;
+                position: relative;
+                z-index: 99999;
             }
 
             input[type="text"] {
-                font-size: 13px;
-                padding: 10px;
+                font-size: 15px !important;
+                padding: 12px 14px !important;
+                height: 48px !important;
+                border-radius: 6px;
+                user-select: text !important;
+                -webkit-user-select: text !important;
             }
 
             .cmd-btn {
-                padding: 0 12px;
-                font-size: 10px;
+                padding: 0 16px !important;
+                font-size: 12px !important;
+                height: 48px !important;
+                min-width: 60px;
+                border-radius: 6px;
+                touch-action: manipulation !important;
+                cursor: pointer;
+                position: relative;
+                z-index: 99999;
             }
         }
     </style>
@@ -1095,7 +1140,36 @@
         }
 
         function triggerMic() {
-            appendUserLog('[ 🎤 VOICE INPUT ACTIVE... ]');
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                appendUserLog('[ 🎤 LISTENING TO MOBILE PHONE MIC... ]');
+
+                recognition.onresult = (event) => {
+                    const text = event.results[0][0].transcript;
+                    document.getElementById('cmd-input').value = text;
+                    sendCmd();
+                };
+
+                recognition.onerror = (err) => {
+                    appendUserLog('[ 🎙️ RECORDING VIA SERVER MIC... ]');
+                    triggerServerMic();
+                };
+
+                try {
+                    recognition.start();
+                    return;
+                } catch(e) {}
+            }
+
+            triggerServerMic();
+        }
+
+        function triggerServerMic() {
             fetch('/api/voice', {method: 'POST'})
             .then(res => res.json())
             .then(data => {
@@ -1116,6 +1190,13 @@
                         camImg.src = data.camera_b64;
                         camFrame.style.display = 'block';
                     }
+                }
+            })
+            .catch(err => {
+                const text = prompt("Speak or type your command to Buddy:");
+                if (text) {
+                    document.getElementById('cmd-input').value = text;
+                    sendCmd();
                 }
             });
         }

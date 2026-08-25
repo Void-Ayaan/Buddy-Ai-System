@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>BUDDY VOICE CALL</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
@@ -10,33 +10,32 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
-        body {
+        html, body {
             background-color: #000000;
             color: #d0e2f5;
             font-family: 'Inter', sans-serif;
-            height: 100vh;
+            min-height: 100vh;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 30px 20px;
-            overflow: hidden;
+            padding: 24px 16px;
             position: relative;
-            z-index: 1;
         }
 
         .header-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 15px;
+            font-size: 16px;
             letter-spacing: 3px;
             color: #00f3ff;
             text-align: center;
             text-shadow: 0 0 12px rgba(0, 243, 255, 0.5);
-            pointer-events: auto;
+            margin-top: 10px;
         }
 
         .call-status {
@@ -45,32 +44,29 @@
             color: #ffb700;
             margin-top: 6px;
             text-align: center;
-            pointer-events: auto;
         }
 
         .call-timer {
             font-family: 'Orbitron', sans-serif;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
             color: #ffffff;
             margin-top: 6px;
             letter-spacing: 2px;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-            pointer-events: auto;
         }
 
         /* INCOMING CALL OVERLAY */
         .incoming-call-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(2, 4, 8, 0.96);
-            z-index: 9999;
+            background: rgba(2, 4, 8, 0.98);
+            z-index: 99999;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
             align-items: center;
             padding: 60px 20px;
-            pointer-events: auto;
         }
 
         .incoming-avatar {
@@ -111,18 +107,17 @@
         }
 
         .ring-btn {
-            width: 75px;
-            height: 75px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             border: none;
-            font-size: 28px;
+            font-size: 30px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 25px rgba(0,0,0,0.5);
             transition: transform 0.2s;
-            pointer-events: auto;
         }
 
         .ring-btn-accept { background: #00ff9d; color: #000; box-shadow: 0 0 30px rgba(0, 255, 157, 0.6); }
@@ -132,13 +127,12 @@
         /* CENTRAL GLOWING AUDIO CALL ORB */
         .orb-wrapper {
             position: relative;
-            width: 200px;
-            height: 200px;
+            width: 180px;
+            height: 180px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 10px 0;
-            pointer-events: auto;
+            margin: 20px 0;
         }
 
         .pulse-ring {
@@ -153,14 +147,13 @@
         }
 
         .audio-orb {
-            width: 130px;
-            height: 130px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             background: radial-gradient(circle, #ffffff 0%, #00f3ff 40%, rgba(0, 243, 255, 0.1) 80%, rgba(0, 0, 0, 0) 100%);
             box-shadow: 0 0 40px rgba(0, 243, 255, 0.8), 0 0 80px rgba(0, 243, 255, 0.3);
             transition: transform 0.15s ease-out;
             cursor: pointer;
-            pointer-events: auto;
             position: relative;
             z-index: 10;
         }
@@ -177,37 +170,34 @@
             color: #00f3ff;
             text-align: center;
             width: 100%;
-            max-width: 340px;
-            min-height: 48px;
-            padding: 10px;
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            border-radius: 6px;
-            margin-bottom: 12px;
+            max-width: 360px;
+            min-height: 52px;
+            padding: 12px;
+            background: rgba(0, 243, 255, 0.06);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 8px;
+            margin-bottom: 16px;
             word-break: break-word;
-            pointer-events: auto;
         }
 
         .mobile-input-row {
             display: flex;
             gap: 8px;
             width: 100%;
-            max-width: 340px;
-            margin-bottom: 14px;
-            pointer-events: auto;
+            max-width: 360px;
+            margin-bottom: 16px;
         }
 
         .mobile-input-box {
             flex: 1;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid var(--cyan-core, #00f3ff);
-            border-radius: 4px;
-            padding: 10px 12px;
+            background: rgba(10, 15, 25, 0.9);
+            border: 1px solid #00f3ff;
+            border-radius: 6px;
+            padding: 12px 14px;
             color: #00f3ff;
             font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
+            font-size: 14px;
             outline: none;
-            pointer-events: auto;
             user-select: text;
         }
 
@@ -215,17 +205,17 @@
             display: flex;
             gap: 14px;
             width: 100%;
-            max-width: 340px;
-            pointer-events: auto;
+            max-width: 360px;
+            margin-bottom: 20px;
         }
 
         .call-btn {
             flex: 1;
-            padding: 15px 0;
+            min-height: 52px;
             border-radius: 30px;
             border: none;
             font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 800;
             letter-spacing: 1px;
             cursor: pointer;
@@ -234,7 +224,6 @@
             justify-content: center;
             align-items: center;
             gap: 6px;
-            pointer-events: auto;
             position: relative;
             z-index: 10;
         }
@@ -266,36 +255,36 @@
         </div>
 
         <div class="incoming-actions">
-            <button class="ring-btn ring-btn-decline" onclick="declineCall()" ontouchstart="declineCall()">✕</button>
-            <button class="ring-btn ring-btn-accept" onclick="acceptCall()" ontouchstart="acceptCall()">📞</button>
+            <button class="ring-btn ring-btn-decline" onclick="declineCall()">✕</button>
+            <button class="ring-btn ring-btn-accept" onclick="acceptCall()">📞</button>
         </div>
     </div>
 
     <div>
         <div class="header-title">BUDDY AI VOICE PHONE CALL</div>
-        <div class="call-status" id="callStatus">CONNECTED • STANDBY MODE</div>
+        <div class="call-status" id="callStatus">CONNECTED • VOICE ACTIVE</div>
         <div class="call-timer" id="timer">00:00</div>
     </div>
 
     <div class="orb-wrapper">
         <div class="pulse-ring" id="pulseRing"></div>
-        <div class="audio-orb" id="orb" onclick="toggleListening()" ontouchstart="toggleListening()"></div>
+        <div class="audio-orb" id="orb" onclick="startMobileVoiceInput()"></div>
     </div>
 
     <div class="speech-transcript" id="transcript">
-        Tap "TALK TO BUDDY", tap the orb, or type below!
+        Tap "MIC VOICE INPUT" or type below to talk...
     </div>
 
     <div class="mobile-input-row">
         <input type="text" class="mobile-input-box" id="mobileTxt" placeholder="TYPE PHONE MESSAGE..." onkeydown="if(event.key==='Enter') sendTextMsg()">
-        <button class="call-btn btn-talk" style="flex:0 0 70px; border-radius:4px; padding:0;" onclick="sendTextMsg()" ontouchstart="sendTextMsg()">SEND</button>
+        <button class="call-btn btn-talk" style="flex:0 0 80px; border-radius:6px; min-height:44px;" onclick="sendTextMsg()">SEND</button>
     </div>
 
     <div class="controls-row">
-        <button class="call-btn btn-talk" id="talkBtn" onclick="startMobileVoiceInput()" ontouchstart="startMobileVoiceInput()">
-            🎤 TAP TO TALK
+        <button class="call-btn btn-talk" id="talkBtn" onclick="startMobileVoiceInput()">
+            🎤 MIC VOICE INPUT
         </button>
-        <button class="call-btn btn-end" onclick="endPhoneCall()" ontouchstart="endPhoneCall()">
+        <button class="call-btn btn-end" onclick="endPhoneCall()">
             🔴 END CALL
         </button>
     </div>
@@ -345,20 +334,7 @@
         function triggerIncomingPhoneCall() {
             document.getElementById('incomingOverlay').style.display = 'flex';
             playTelephoneRingtone();
-
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('BUDDY AI INCOMING PHONE CALL', {
-                    body: 'Incoming Audio Call from Buddy AI Swarm. Tap to answer!',
-                    icon: '/camera_view.jpg'
-                });
-            }
         }
-
-        document.body.addEventListener('touchstart', () => {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
-            }
-        }, { once: true });
 
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('autocall') === 'true') {
@@ -406,7 +382,7 @@
             };
 
             recognition.onerror = () => {
-                document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO STREAM';
+                document.getElementById('callStatus').textContent = 'CONNECTED • VOICE ACTIVE';
                 document.getElementById('callStatus').style.color = '#ffb700';
                 document.getElementById('orb').style.transform = 'scale(1.0)';
             };
@@ -416,18 +392,13 @@
             };
         }
 
-        function startMobileVoiceInput(e) {
-            if (e) e.stopPropagation();
+        function startMobileVoiceInput() {
             if (recognition) {
                 try { recognition.start(); } catch(err) {}
             } else {
-                const text = prompt("Your Voice Message to Buddy:");
+                const text = prompt("Speak or type your message to Buddy:");
                 if (text) sendPhoneVoiceCommand(text);
             }
-        }
-
-        function toggleListening(e) {
-            startMobileVoiceInput(e);
         }
 
         function sendTextMsg() {
@@ -453,7 +424,7 @@
                 };
 
                 utterance.onend = () => {
-                    document.getElementById('callStatus').textContent = 'CONNECTED • AUDIO STREAM';
+                    document.getElementById('callStatus').textContent = 'CONNECTED • VOICE ACTIVE';
                     document.getElementById('callStatus').style.color = '#ffb700';
                     document.getElementById('orb').style.transform = 'scale(1.0)';
                 };
@@ -478,8 +449,7 @@
             });
         }
 
-        function endPhoneCall(e) {
-            if (e) e.stopPropagation();
+        function endPhoneCall() {
             stopTelephoneRingtone();
             clearInterval(timerInterval);
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -487,28 +457,10 @@
                 <div style="margin: auto; text-align: center;">
                     <div style="font-family: 'Orbitron'; font-size: 18px; color: #ff2a5f;">CALL TERMINATED</div>
                     <div style="font-family: 'Share Tech Mono'; margin-top: 10px; color: #888;">Duration: ${document.getElementById('timer').textContent}</div>
-                    <button style="margin-top: 20px; padding: 10px 20px; background: #00f3ff; border: none; font-family: 'Orbitron';" onclick="location.reload()">RECONNECT CALL</button>
+                    <button style="margin-top: 20px; padding: 12px 24px; background: #00f3ff; border: none; font-family: 'Orbitron'; border-radius: 4px;" onclick="location.reload()">RECONNECT CALL</button>
                 </div>
             `;
         }
-
-        // Live Auto-Ring Socket Listener
-        let lastSyncLogCount = 0;
-        setInterval(() => {
-            fetch('/api/sync_logs')
-            .then(res => res.json())
-            .then(data => {
-                if (data.logs && data.logs.length > lastSyncLogCount) {
-                    const latest = data.logs[data.logs.length - 1];
-                    const cmd = (latest.command || '').toLowerCase();
-                    if (cmd.includes('connect to mobile for audio') || cmd.includes('call my phone') || cmd.includes('mobile call')) {
-                        triggerIncomingPhoneCall();
-                    }
-                    lastSyncLogCount = data.logs.length;
-                }
-            })
-            .catch(err => {});
-        }, 2000);
     </script>
 </body>
 </html>
