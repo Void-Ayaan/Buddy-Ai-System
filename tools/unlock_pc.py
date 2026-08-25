@@ -2,70 +2,109 @@ import time
 import ctypes
 import re
 
-# Win32 Virtual Key Codes
-VK_SPACE = 0x20
-VK_RETURN = 0x0D
-
-# Key Event Flags
+# Win32 SendInput Structures & Constants
+INPUT_KEYBOARD = 1
 KEYEVENTF_KEYUP = 0x0002
+KEYEVENTF_UNICODE = 0x0004
 
-def _press_key(vk_code):
-    """Simulate single keydown and keyup event via Win32 user32 API."""
-    ctypes.windll.user32.keybd_event(vk_code, 0, 0, 0)
-    time.sleep(0.05)
-    ctypes.windll.user32.keybd_event(vk_code, 0, KEYEVENTF_KEYUP, 0)
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", ctypes.c_ushort),
+        ("wScan", ctypes.c_ushort),
+        ("dwFlags", ctypes.c_ulong),
+        ("time", ctypes.c_ulong),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))
+    ]
 
-def _send_text_keystrokes(text):
-    """Send text characters as keyboard strokes to active Windows PIN/Password field."""
-    user32 = ctypes.windll.user32
-    for char in text:
-        # VkKeyScanW maps unicode character to virtual key code
-        vk = user32.VkKeyScanW(ord(char))
-        if vk != -1:
-            vk_code = vk & 0xFF
-            shift_state = (vk >> 8) & 0xFF
-            
-            if shift_state & 1: # Shift key required for uppercase/special char
-                user32.keybd_event(0x10, 0, 0, 0) # VK_SHIFT down
-                
-            user32.keybd_event(vk_code, 0, 0, 0)
-            time.sleep(0.03)
-            user32.keybd_event(vk_code, 0, KEYEVENTF_KEYUP, 0)
-            
-            if shift_state & 1:
-                user32.keybd_event(0x10, 0, KEYEVENTF_KEYUP, 0) # VK_SHIFT up
-            time.sleep(0.02)
+class HARDWAREINPUT(ctypes.Structure):
+    _fields_ = [
+        ("uMsg", ctypes.c_ulong),
+        ("wParamL", ctypes.c_ushort),
+        ("wParamH", ctypes.c_ushort)
+    ]
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [
+        ("dx", ctypes.c_long),
+        ("dy", ctypes.c_long),
+        ("mouseData", ctypes.c_ulong),
+        ("dwFlags", ctypes.c_ulong),
+        ("time", ctypes.c_ulong),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))
+    ]
+
+class INPUT_UNION(ctypes.Union):
+    _fields_ = [
+        ("ki", KEYBDINPUT),
+        ("mi", MOUSEINPUT),
+        ("hi", HARDWAREINPUT)
+    ]
+
+class INPUT(ctypes.Structure):
+    _fields_ = [
+        ("type", ctypes.c_ulong),
+        ("u", INPUT_UNION)
+    ]
+
+def _send_key_event(vk=0, scan=0, flags=0):
+    """Send low-level hardware SendInput keyboard event to Windows kernel."""
+    extra = ctypes.c_ulong(0)
+    ii_ = INPUT_UNION()
+    ii_.ki = KEYBDINPUT(vk, scan, flags, 0, ctypes.pointer(extra))
+    x = INPUT(INPUT_KEYBOARD, ii_)
+    ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+def _type_character_unicode(char):
+    """Send direct Unicode scan code (works on Windows Lock Screen password box)."""
+    scan_code = ord(char)
+    # Key down unicode
+    _send_key_event(0, scan_code, KEYEVENTF_UNICODE)
+    time.sleep(0.04)
+    # Key up unicode
+    _send_key_event(0, scan_code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP)
+    time.sleep(0.04)
 
 def unlock_windows_pc(prompt_payload):
     """
-    Buddy Autonomous Windows PC Unlock Protocol:
-    1. Parses password/PIN from payload ("unlock pc 1234", "unlock computer with password myPass").
-    2. Presses Space/Enter to wake lock screen and open PIN box.
-    3. Types password keystrokes into PIN box.
-    4. Presses Enter to unlock PC!
+    Buddy Low-Level Hardware Windows PC Unlock Protocol:
+    1. Sends Space / Enter key to slide up Windows lock wallpaper.
+    2. Pauses 1.2s to let password input field acquire cursor focus.
+    3. Types Unicode keystrokes directly via SendInput driver API.
+    4. Sends Enter key to log into Windows desktop!
     """
     if not prompt_payload:
         return "Boss, please specify your password or PIN (e.g. 'unlock pc 1234')."
 
-    # Extract password string from command
     password = re.sub(r"^(?:with\s+password|with\s+pin|password|pin)\s+", "", prompt_payload, flags=re.IGNORECASE).strip()
     if not password:
         password = prompt_payload.strip()
 
     try:
-        # Step 1: Press Space key to wake up lock screen and present PIN input box
-        _press_key(VK_SPACE)
-        time.sleep(0.4)
-        _press_key(VK_SPACE)
-        time.sleep(0.4)
+        # Step 1: Wake screen & dismiss lock wallpaper (Space key VK 0x20)
+        _send_key_event(0x20, 0, 0)
+        time.sleep(0.05)
+        _send_key_event(0x20, 0, KEYEVENTF_KEYUP)
+        time.sleep(0.6)
 
-        # Step 2: Type password keystrokes
-        _send_text_keystrokes(password)
-        time.sleep(0.2)
+        # Press Enter key (VK 0x0D) to force PIN box focus
+        _send_key_event(0x0D, 0, 0)
+        time.sleep(0.05)
+        _send_key_event(0x0D, 0, KEYEVENTF_KEYUP)
+        
+        # Pause to guarantee PIN box acquires input focus
+        time.sleep(1.0)
 
-        # Step 3: Press Enter key to submit PIN/Password
-        _press_key(VK_RETURN)
+        # Step 2: Type password characters via Unicode SendInput
+        for ch in password:
+            _type_character_unicode(ch)
 
-        return f"Boss, sent unlock sequence with your password to your PC lock screen! Your PC is now unlocking."
+        time.sleep(0.3)
+
+        # Step 3: Press Enter key to submit login
+        _send_key_event(0x0D, 0, 0)
+        time.sleep(0.05)
+        _send_key_event(0x0D, 0, KEYEVENTF_KEYUP)
+
+        return f"Boss, low-level SendInput unlock sequence executed for '{password}'! Your PC is logging in."
     except Exception as e:
-        return f"Error executing unlock sequence: {e}"
+        return f"Error sending SendInput unlock sequence: {e}"
