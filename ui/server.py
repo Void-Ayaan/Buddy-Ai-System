@@ -131,7 +131,7 @@ def execute_command_string(user_input):
         result = submit_unlock_password(user_input)
         return result, False
 
-    pipeline_type, action, payload = process_query_pipeline(user_input)
+    pipeline_type, action, payload, latency_ms = process_query_pipeline(user_input)
 
     swarm.set_active_workflow(action)
     should_compact = False
