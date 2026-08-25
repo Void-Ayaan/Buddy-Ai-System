@@ -47,6 +47,7 @@ from tools.learner_tools import learn_topic_from_internet
 from tools.prompt_master import create_master_prompt
 from tools.qr_tools import get_mobile_connect_info
 from tools.phone_bridge import initiate_mobile_audio_call
+from tools.twilio_call import make_real_cellular_call
 from tools.system_tools import (
     open_chrome,
     open_website,

@@ -54,6 +54,74 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
         }
 
+        /* INCOMING CALL OVERLAY */
+        .incoming-call-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #020408;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 60px 20px;
+        }
+
+        .incoming-avatar {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #00f3ff 60%, rgba(0,0,0,0.8) 100%);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.8);
+            animation: ringPulse 1s infinite alternate;
+        }
+
+        @keyframes ringPulse {
+            0% { transform: scale(0.92); box-shadow: 0 0 30px rgba(0, 243, 255, 0.4); }
+            100% { transform: scale(1.1); box-shadow: 0 0 70px rgba(0, 243, 255, 0.9); }
+        }
+
+        .incoming-caller-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 3px;
+            margin-top: 20px;
+        }
+
+        .incoming-caller-sub {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            color: #00f3ff;
+            margin-top: 8px;
+        }
+
+        .incoming-actions {
+            display: flex;
+            gap: 40px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .ring-btn {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+
+        .ring-btn-accept { background: #00ff9d; color: #000; box-shadow: 0 0 30px rgba(0, 255, 157, 0.6); }
+        .ring-btn-decline { background: #ff2a5f; color: #fff; box-shadow: 0 0 30px rgba(255, 42, 95, 0.6); }
+        .ring-btn:active { transform: scale(0.9); }
+
         /* CENTRAL GLOWING AUDIO CALL ORB */
         .orb-wrapper {
             position: relative;
@@ -148,6 +216,20 @@
 </head>
 <body>
 
+    <!-- INCOMING CALL SCREEN -->
+    <div class="incoming-call-overlay" id="incomingOverlay" style="display: none;">
+        <div style="text-align: center;">
+            <div class="incoming-avatar"></div>
+            <div class="incoming-caller-name">BUDDY AI</div>
+            <div class="incoming-caller-sub">INCOMING VOICE PHONE CALL...</div>
+        </div>
+
+        <div class="incoming-actions">
+            <button class="ring-btn ring-btn-decline" onclick="declineCall()">✕</button>
+            <button class="ring-btn ring-btn-accept" onclick="acceptCall()">📞</button>
+        </div>
+    </div>
+
     <div>
         <div class="header-title">BUDDY AI VOICE PHONE CALL</div>
         <div class="call-status" id="callStatus">CONNECTED • AUDIO-ONLY STREAM</div>
@@ -173,6 +255,20 @@
     </div>
 
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('autocall') === 'true') {
+            document.getElementById('incomingOverlay').style.display = 'flex';
+        }
+
+        function acceptCall() {
+            document.getElementById('incomingOverlay').style.display = 'none';
+            speakPhoneOutput("Hello Boss! I am online on your phone call bridge. How can I assist you today?");
+        }
+
+        function declineCall() {
+            document.getElementById('incomingOverlay').style.display = 'none';
+        }
+
         let seconds = 0;
         let timerInterval = setInterval(() => {
             seconds++;
