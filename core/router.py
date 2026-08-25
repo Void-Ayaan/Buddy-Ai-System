@@ -139,6 +139,10 @@ def route(text):
         payload = re.sub(r"^(?:unlock\s+my\s+pc|unlock\s+pc|unlock\s+computer|unlock\s+laptop|unlock\s+system)\s*", "", text, flags=re.IGNORECASE).strip()
         return "unlock_pc", payload
 
+    if text_lower.startswith("password ") or text_lower.startswith("pin "):
+        payload = re.sub(r"^(?:password|pin)\s+", "", text, flags=re.IGNORECASE).strip()
+        return "submit_password", payload
+
     if any(p in text_lower for p in ["connect to mobile for audio", "call my phone", "connect audio to phone", "phone call mode", "mobile audio call", "mobile call"]):
         return "connect_mobile_audio", None
 

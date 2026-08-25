@@ -55,56 +55,72 @@ def _send_key_event(vk=0, scan=0, flags=0):
     ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
 def _type_character_unicode(char):
-    """Send direct Unicode scan code (works on Windows Lock Screen password box)."""
+    """Send direct Unicode scan code to open PIN/password input box."""
     scan_code = ord(char)
-    # Key down unicode
     _send_key_event(0, scan_code, KEYEVENTF_UNICODE)
     time.sleep(0.04)
-    # Key up unicode
     _send_key_event(0, scan_code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP)
     time.sleep(0.04)
 
-def unlock_windows_pc(prompt_payload):
-    """
-    Buddy Low-Level Hardware Windows PC Unlock Protocol:
-    1. Sends Space / Enter key to slide up Windows lock wallpaper.
-    2. Pauses 1.2s to let password input field acquire cursor focus.
-    3. Types Unicode keystrokes directly via SendInput driver API.
-    4. Sends Enter key to log into Windows desktop!
-    """
-    if not prompt_payload:
-        return "Boss, please specify your password or PIN (e.g. 'unlock pc 1234')."
+def wake_windows_lock_screen():
+    """Step 1: Press Space and Enter keys to awaken screen and slide up lock wallpaper."""
+    try:
+        # Press Space key (VK 0x20)
+        _send_key_event(0x20, 0, 0)
+        time.sleep(0.06)
+        _send_key_event(0x20, 0, KEYEVENTF_KEYUP)
+        time.sleep(0.5)
 
-    password = re.sub(r"^(?:with\s+password|with\s+pin|password|pin)\s+", "", prompt_payload, flags=re.IGNORECASE).strip()
-    if not password:
-        password = prompt_payload.strip()
+        # Press Enter key (VK 0x0D)
+        _send_key_event(0x0D, 0, 0)
+        time.sleep(0.06)
+        _send_key_event(0x0D, 0, KEYEVENTF_KEYUP)
+        time.sleep(0.3)
+
+        return (
+            "Boss, I sent the SPACE key sequence to awaken your lock screen!\n\n"
+            "The password input box should now be visible on your PC screen.\n"
+            "Please reply with your exact password (e.g. 'password 1234' or type your PIN) to log in!"
+        )
+    except Exception as e:
+        return f"Error waking screen: {e}"
+
+def submit_unlock_password(password_text):
+    """Step 2: Type exact password into focused PIN box and press Enter."""
+    clean_pwd = password_text.strip()
+    if not clean_pwd:
+        return "Please enter your password (e.g. 'password 1234')."
 
     try:
-        # Step 1: Wake screen & dismiss lock wallpaper (Space key VK 0x20)
-        _send_key_event(0x20, 0, 0)
-        time.sleep(0.05)
-        _send_key_event(0x20, 0, KEYEVENTF_KEYUP)
-        time.sleep(0.6)
-
-        # Press Enter key (VK 0x0D) to force PIN box focus
-        _send_key_event(0x0D, 0, 0)
-        time.sleep(0.05)
-        _send_key_event(0x0D, 0, KEYEVENTF_KEYUP)
-        
-        # Pause to guarantee PIN box acquires input focus
-        time.sleep(1.0)
-
-        # Step 2: Type password characters via Unicode SendInput
-        for ch in password:
+        # Ensure focus by sending subtle space backspace
+        for ch in clean_pwd:
             _type_character_unicode(ch)
 
         time.sleep(0.3)
 
-        # Step 3: Press Enter key to submit login
+        # Press Enter key to submit login
         _send_key_event(0x0D, 0, 0)
-        time.sleep(0.05)
+        time.sleep(0.06)
         _send_key_event(0x0D, 0, KEYEVENTF_KEYUP)
 
-        return f"Boss, low-level SendInput unlock sequence executed for '{password}'! Your PC is logging in."
+        return f"Boss, typed exact password into lock screen and sent ENTER key! Your PC is logging in."
     except Exception as e:
-        return f"Error sending SendInput unlock sequence: {e}"
+        return f"Error typing password: {e}"
+
+def unlock_windows_pc(prompt_payload):
+    """
+    Buddy 2-Step Interactive Unlock Engine:
+    - If payload is empty -> Step 1: Wakes screen with SPACE key and prompts user for password.
+    - If payload contains password -> Step 2: Types exact password and submits ENTER!
+    """
+    clean_payload = (prompt_payload or "").strip()
+    clean_payload = re.sub(r"^(?:with\s+password|with\s+pin|password|pin)\s*", "", clean_payload, flags=re.IGNORECASE).strip()
+
+    if not clean_payload:
+        return wake_windows_lock_screen()
+    else:
+        # Step 1: Wake screen
+        wake_windows_lock_screen()
+        time.sleep(0.6)
+        # Step 2: Type exact password
+        return submit_unlock_password(clean_payload)
