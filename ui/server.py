@@ -378,7 +378,7 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(f.read())
             else:
                 self.wfile.write(b"")
-        elif self.path == "/favicon.ico":
+        elif self.path.startswith("/favicon.ico"):
             self.send_response(200)
             self.send_header("Content-Type", "image/x-icon")
             self.end_headers()
