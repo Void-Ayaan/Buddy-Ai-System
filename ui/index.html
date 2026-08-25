@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BUDDY 3D HUD</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
@@ -36,7 +36,6 @@
             margin: 0;
             padding: 0;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -51,15 +50,15 @@
             transition: all 0.4s ease;
         }
 
-        /* FULL-SCREEN CENTRALIZED BACKGROUND SWARM CANVAS */
+        /* FULL-SCREEN CENTRALIZED BACKGROUND SWARM CANVAS (NON-RESPONSIVE TO MOUSE) */
         canvas#bgSwarmCanvas {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 1 !important;
-            pointer-events: none !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
             background: #000000;
         }
 
@@ -89,7 +88,7 @@
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 18px;
         }
 
         .dock-toggle-btn {
@@ -130,7 +129,7 @@
 
         .status-strip {
             display: flex;
-            gap: 18px;
+            gap: 20px;
             font-size: 11px;
             font-family: 'Share Tech Mono', monospace;
             color: var(--silver-dim);
@@ -151,6 +150,29 @@
             position: relative;
             z-index: 2;
             transition: all 0.4s ease;
+        }
+
+        /* COMPACT CORNER VISUAL WIDGET MODE */
+        body.compact-mode .hud-stage {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        body.compact-mode .hud-panel:nth-child(1),
+        body.compact-mode .hud-panel:nth-child(3),
+        body.compact-mode .log-terminal,
+        body.compact-mode .hud-input-row {
+            display: none !important;
+        }
+
+        body.compact-mode .hud-panel.center-hud {
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
         }
 
         /* FRAMELESS UN-CAGED STATIC PANELS */
@@ -234,6 +256,7 @@
             font-family: 'Share Tech Mono', monospace;
         }
 
+        /* SLEEK CYBER SCROLLBAR */
         .log-terminal::-webkit-scrollbar {
             width: 5px;
         }
@@ -253,6 +276,7 @@
         .log-tag-buddy { color: var(--cyan-core); font-weight: bold; }
         .log-body { color: var(--silver-main); white-space: pre-wrap; word-break: break-word; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 
+        /* CODE & MASTER PROMPT BLOCK WITH FLOATING COPY BUTTON */
         .code-block-wrapper {
             position: relative;
             margin: 10px 0;
@@ -366,6 +390,7 @@
 
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
 
+        /* UN-CAGED TACTICAL BUTTONS FLOATING OVER BACKGROUND SWARM */
         .tactical-btn {
             background: rgba(0, 0, 0, 0.5);
             border: none;
@@ -423,141 +448,11 @@
             height: auto;
             display: block;
         }
-
-        /* MOBILE QR MODAL */
-        .qr-modal-backdrop {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(10px);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .qr-modal-card {
-            background: rgba(2, 4, 8, 0.95);
-            border: 1px solid var(--cyan-core);
-            border-radius: 8px;
-            padding: 24px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.35);
-            max-width: 340px;
-            width: 90%;
-        }
-
-        .qr-modal-card img {
-            width: 200px;
-            height: 200px;
-            border: 2px solid var(--cyan-core);
-            border-radius: 6px;
-            margin: 14px 0;
-        }
-
-        .qr-link-text {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            color: var(--cyan-core);
-            word-break: break-all;
-            margin-bottom: 14px;
-        }
-
-        /* 📱 RESPONSIVE MOBILE CYBER HUD LAYOUT BREAKPOINT */
-        @media (max-width: 768px) {
-            header {
-                padding: 10px 14px;
-            html, body {
-                overflow-y: auto !important;
-                height: auto !important;
-                min-height: 100vh;
-                touch-action: manipulation;
-                -webkit-overflow-scrolling: touch;
-            }
-            canvas#bgSwarmCanvas {
-                pointer-events: none !important;
-                z-index: 0 !important;
-            }
-            header {
-                padding: 10px 14px;
-                position: sticky;
-                top: 0;
-                background: rgba(0, 0, 0, 0.95);
-                z-index: 99999;
-            }
-            .hud-brand { font-size: 18px; letter-spacing: 2px; }
-            .status-strip { display: none; }
-
-            .dock-toggle-btn {
-                min-height: 42px;
-                padding: 8px 12px;
-                font-size: 11px;
-                touch-action: manipulation;
-            }
-
-            .hud-stage {
-                display: flex;
-                flex-direction: column;
-                padding: 10px 10px 30px 10px;
-                gap: 12px;
-                min-height: calc(100vh - 60px);
-            }
-
-            .hud-panel:nth-child(1),
-            .hud-panel:nth-child(3) {
-                display: none;
-            }
-
-            .hud-panel.center-hud {
-                width: 100%;
-                height: auto;
-                flex: 1;
-                z-index: 10;
-            }
-
-            .log-terminal {
-                max-height: 55vh;
-                min-height: 260px;
-                font-size: 13px;
-                line-height: 1.5;
-                overflow-y: auto !important;
-                -webkit-overflow-scrolling: touch;
-                user-select: text;
-            }
-
-            .hud-input-row {
-                gap: 8px;
-                margin-top: 10px;
-                position: relative;
-                z-index: 99999;
-            }
-
-            input[type="text"] {
-                font-size: 15px !important;
-                padding: 12px 14px !important;
-                height: 48px !important;
-                border-radius: 6px;
-                user-select: text !important;
-                -webkit-user-select: text !important;
-            }
-
-            .cmd-btn {
-                padding: 0 16px !important;
-                font-size: 12px !important;
-                height: 48px !important;
-                min-width: 60px;
-                border-radius: 6px;
-                touch-action: manipulation !important;
-                cursor: pointer;
-                position: relative;
-                z-index: 99999;
-            }
-        }
     </style>
 </head>
 <body id="hudBody">
 
-    <!-- DENSE 3D WEB CLUSTER ON PITCH OBSIDIAN BLACK (#000000) WITH MOBILE WI-FI ACCESS -->
+    <!-- DENSE 3D WEB CLUSTER WITH FLOATING PROMPT COPY BUTTON -->
     <canvas id="bgSwarmCanvas"></canvas>
 
     <header>
@@ -566,7 +461,6 @@
         </div>
         
         <div class="header-controls">
-            <button class="dock-toggle-btn" onclick="openQrModal()">[ 📱 MOBILE QR ]</button>
             <button class="dock-toggle-btn" id="dockBtn" onclick="toggleCompactMode()">[ 🗖 CORNER WIDGET ]</button>
 
             <div class="theme-btn-group">
@@ -578,7 +472,7 @@
 
             <div class="status-strip">
                 <div class="status-node">SWARM: <span class="status-val" id="swarm-conn">ROUTER -&gt; ROUTER</span></div>
-                <div class="status-node">WI-FI: <span class="status-val" id="wifi-ip">192.168.1.4:5000</span></div>
+                <div class="status-node">CORE: <span class="status-val" id="sys-status">ONLINE</span></div>
                 <div class="status-node">ENCRYPTION: <span class="status-val">256-BIT</span></div>
             </div>
         </div>
@@ -609,7 +503,7 @@
 
             <div class="panel-label" style="margin-top: 14px;">
                 <span>REAL-TIME AGENT WORKFLOW</span>
-                <span>[ 11 NODES ]</span>
+                <span>[ 12 NODES ]</span>
             </div>
 
             <div class="swarm-live-list" id="swarm-node-list">
@@ -624,6 +518,7 @@
                 <div class="swarm-live-node"><span>AGENT-09: SEARCH</span><span class="state-idle" id="st-09">[ IDLE ]</span></div>
                 <div class="swarm-live-node"><span>AGENT-10: WORKFLOW</span><span class="state-idle" id="st-10">[ IDLE ]</span></div>
                 <div class="swarm-live-node"><span>AGENT-11: LEARNER</span><span class="state-idle" id="st-11">[ IDLE ]</span></div>
+                <div class="swarm-live-node"><span>AGENT-12: HAND-KINEMATIK</span><span class="state-idle" id="st-12">[ IDLE ]</span></div>
             </div>
         </div>
 
@@ -653,8 +548,8 @@
 
             <div class="hud-input-row">
                 <input type="text" id="cmd-input" placeholder="INPUT COMMAND STRING..." onkeydown="if(event.key==='Enter') sendCmd()">
-                <button class="cmd-btn cmd-btn-mic" onclick="triggerMic()" ontouchstart="triggerMic()">MIC</button>
-                <button class="cmd-btn" onclick="sendCmd()" ontouchstart="sendCmd()">EXECUTE</button>
+                <button class="cmd-btn cmd-btn-mic" onclick="triggerMic()">MIC</button>
+                <button class="cmd-btn" onclick="sendCmd()">EXECUTE</button>
             </div>
         </div>
 
@@ -703,22 +598,6 @@
         </div>
     </div>
 
-    <!-- MOBILE WI-FI CONNECTION QR MODAL -->
-    <div class="qr-modal-backdrop" id="qrModal" onclick="closeQrModal(event)">
-        <div class="qr-modal-card" onclick="event.stopPropagation()">
-            <div class="panel-label" style="justify-content: center; margin-bottom: 4px;">
-                <span>📱 MOBILE CYBER HUD</span>
-            </div>
-            <p style="font-size: 11px; color: var(--silver-dim);">Scan this QR Code on your Phone or Tablet connected to local Wi-Fi:</p>
-            
-            <img id="qrModalImg" src="" alt="Mobile Connection QR Code">
-            
-            <div class="qr-link-text" id="qrModalUrl">http://192.168.1.4:5000</div>
-            
-            <button class="cmd-btn" style="width: 100%; padding: 8px 0;" onclick="closeQrModal()">CLOSE</button>
-        </div>
-    </div>
-
     <script>
         function setTheme(themeClass) {
             document.getElementById('hudBody').className = themeClass;
@@ -738,23 +617,6 @@
                 window.resizeTo(1280, 800);
                 window.moveTo(100, 100);
             }
-        }
-
-        function openQrModal() {
-            fetch('/api/mobile_info')
-            .then(res => res.json())
-            .then(info => {
-                document.getElementById('qrModalImg').src = info.qr_url;
-                document.getElementById('qrModalUrl').textContent = info.url;
-                document.getElementById('qrModal').style.display = 'flex';
-            })
-            .catch(err => {
-                document.getElementById('qrModal').style.display = 'flex';
-            });
-        }
-
-        function closeQrModal(e) {
-            document.getElementById('qrModal').style.display = 'none';
         }
 
         function copyCodeBlock(btnEl) {
@@ -782,18 +644,12 @@
         // PURE CYBER CYAN 3D WEB CLUSTER ON PITCH OBSIDIAN BLACK (#000000)
         const canvas = document.getElementById('bgSwarmCanvas');
         const ctx = canvas.getContext('2d');
-
-        function getViewportDimensions() {
-            return {
-                w: window.innerWidth || document.documentElement.clientWidth || screen.width || 1280,
-                h: window.innerHeight || document.documentElement.clientHeight || screen.height || 720
-            };
-        }
+        let handZoomScale = 1.0;
+        let targetHandZoomScale = 1.0;
 
         function resizeCanvas() {
-            const dims = getViewportDimensions();
-            canvas.width = dims.w;
-            canvas.height = dims.h;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -840,21 +696,16 @@
         const numAmbientBgParticles = 55;
         const bgAmbientParticles = [];
 
-        function initAmbientParticles() {
-            const dims = getViewportDimensions();
-            bgAmbientParticles.length = 0;
-            for (let i = 0; i < numAmbientBgParticles; i++) {
-                bgAmbientParticles.push({
-                    x: Math.random() * dims.w,
-                    y: Math.random() * dims.h,
-                    vx: (Math.random() - 0.5) * 0.45,
-                    vy: (Math.random() - 0.5) * 0.45,
-                    size: 0.8 + Math.random() * 1.2,
-                    alpha: 0.15 + Math.random() * 0.25
-                });
-            }
+        for (let i = 0; i < numAmbientBgParticles; i++) {
+            bgAmbientParticles.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                vx: (Math.random() - 0.5) * 0.45,
+                vy: (Math.random() - 0.5) * 0.45,
+                size: 0.8 + Math.random() * 1.2,
+                alpha: 0.05 + Math.random() * 0.16
+            });
         }
-        initAmbientParticles();
 
         let rotY = 0;
         let rotX = 0.2;
@@ -863,17 +714,11 @@
         let voicePulseTarget = 1.0;
 
         function drawBackgroundSwarm() {
-            const dims = getViewportDimensions();
-            if (canvas.width !== dims.w || canvas.height !== dims.h) {
-                canvas.width = dims.w;
-                canvas.height = dims.h;
-            }
-
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const centerX = dims.w / 2;
-            const centerY = dims.h / 2;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
             const now = Date.now();
 
             bgAmbientParticles.forEach(p => {
@@ -929,8 +774,9 @@
             ctx.arc(centerX, centerY, orbRadius, 0, Math.PI * 2);
             ctx.fill();
 
+            handZoomScale += (targetHandZoomScale - handZoomScale) * 0.15;
             const outerSphereVoiceScale = 1.0 + (voicePulseScale - 1.0) * 0.40;
-            const R = (canvas.width < 768 ? 160 : 250) * outerSphereVoiceScale;
+            const R = 250 * outerSphereVoiceScale * handZoomScale;
             const focalLength = 360;
 
             const projectedDots = [];
@@ -954,7 +800,7 @@
                 const projX = centerX + x * scale;
                 const projY = centerY + y * scale;
 
-                const alpha = Math.max(0.20, Math.min(0.70, (z + R) / (2 * R))) * outerSphereVoiceScale;
+                const alpha = Math.max(0.06, Math.min(0.40, (z + R) / (2 * R))) * outerSphereVoiceScale;
 
                 projectedDots.push({
                     isInner: true,
@@ -962,7 +808,7 @@
                     y: projY,
                     z: z,
                     alpha: alpha,
-                    size: Math.max(1.2, p.baseSize * 1.5 * scale)
+                    size: Math.max(0.6, p.baseSize * scale)
                 });
             });
 
@@ -984,7 +830,7 @@
                 const projX = centerX + x1 * scale;
                 const projY = centerY + y2 * scale;
 
-                const alpha = Math.max(0.25, Math.min(0.85, (z2 + R) / (2 * R))) * outerSphereVoiceScale;
+                const alpha = Math.max(0.08, Math.min(0.48, (z2 + R) / (2 * R))) * outerSphereVoiceScale;
 
                 projectedDots.push({
                     isInner: false,
@@ -992,8 +838,8 @@
                     x: projX,
                     y: projY,
                     z: z2,
-                    alpha: Math.min(0.85, alpha),
-                    size: Math.max(1.5, p.baseSize * 1.6 * scale)
+                    alpha: Math.min(0.50, alpha),
+                    size: Math.max(0.7, p.baseSize * scale)
                 });
             });
 
@@ -1006,8 +852,8 @@
                         ctx.beginPath();
                         ctx.moveTo(centerX, centerY);
                         ctx.lineTo(d1.x, d1.y);
-                        ctx.strokeStyle = `rgba(0, 243, 255, ${d1.alpha * 0.35 * voicePulseScale})`;
-                        ctx.lineWidth = 1.2;
+                        ctx.strokeStyle = `rgba(0, 243, 255, ${d1.alpha * 0.09 * voicePulseScale})`;
+                        ctx.lineWidth = 1;
                         ctx.stroke();
                     }
 
@@ -1019,8 +865,8 @@
                                 ctx.beginPath();
                                 ctx.moveTo(d1.x, d1.y);
                                 ctx.lineTo(d2.x, d2.y);
-                                ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(d1.alpha, d2.alpha) * 0.45 * outerSphereVoiceScale})`;
-                                ctx.lineWidth = 1.2;
+                                ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(d1.alpha, d2.alpha) * 0.20 * outerSphereVoiceScale})`;
+                                ctx.lineWidth = 1;
                                 ctx.stroke();
                             }
                         }
@@ -1031,8 +877,8 @@
             projectedDots.forEach(d => {
                 ctx.beginPath();
                 ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-                ctx.fillStyle = d.isInner ? `rgba(0, 243, 255, ${d.alpha * 0.95})` : `rgba(0, 243, 255, ${d.alpha})`;
-                ctx.shadowBlur = d.z > 0 ? (d.isInner ? 8 : 12) : 2;
+                ctx.fillStyle = d.isInner ? `rgba(0, 243, 255, ${d.alpha * 0.85})` : `rgba(0, 243, 255, ${d.alpha})`;
+                ctx.shadowBlur = d.z > 0 ? (d.isInner ? 4 : 6) : 1;
                 ctx.shadowColor = '#00f3ff';
                 ctx.fill();
                 ctx.shadowBlur = 0;
@@ -1050,7 +896,9 @@
 
         function formatLogContent(text) {
             if (!text) return '';
+            // Escape HTML tags to prevent XSS
             let clean = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Attach a sleek floating [ 📋 COPY PROMPT ] button ONLY whenever a prompt/code block appears
             clean = clean.replace(/```(?:markdown|python|html|css|javascript|js|json)?\s*([\s\S]*?)```/g, 
                 '<div class="code-block-wrapper"><button class="copy-prompt-btn" onclick="copyCodeBlock(this)">[ 📋 COPY PROMPT ]</button><code-block>$1</code-block></div>');
             return clean;
@@ -1084,6 +932,7 @@
             const bodySpan = row.querySelector('.log-body');
             const cursorSpan = row.querySelector('.typing-cursor');
             
+            // Clean text speech string for web synthesis
             const cleanSpeechText = text.replace(/```[\s\S]*?```/g, "Master prompt generated. Click copy prompt to copy.").replace(/`[^`]+`/g, "");
 
             if ('speechSynthesis' in window) {
@@ -1109,6 +958,7 @@
                     feed.scrollTop = feed.scrollHeight;
                 };
 
+                // Trigger voice-synced light sphere expansion
                 isSpeaking = true;
                 window.speechSynthesis.speak(utterance);
                 bodySpan.innerHTML = formatLogContent(text);
@@ -1159,38 +1009,7 @@
         }
 
         function triggerMic() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'en-US';
-
-                appendUserLog('[ 🎤 LISTENING TO MOBILE PHONE MIC... ]');
-
-                recognition.onresult = (event) => {
-                    const text = event.results[0][0].transcript;
-                    document.getElementById('cmd-input').value = text;
-                    sendCmd();
-                };
-
-                recognition.onerror = (err) => {
-                    openMobileVoiceModal();
-                };
-
-                try {
-                    recognition.start();
-                    return;
-                } catch(e) {
-                    openMobileVoiceModal();
-                    return;
-                }
-            }
-
-            openMobileVoiceModal();
-        }
-
-        function triggerServerMic() {
+            appendUserLog('[ 🎤 VOICE INPUT ACTIVE... ]');
             fetch('/api/voice', {method: 'POST'})
             .then(res => res.json())
             .then(data => {
@@ -1211,13 +1030,6 @@
                         camImg.src = data.camera_b64;
                         camFrame.style.display = 'block';
                     }
-                }
-            })
-            .catch(err => {
-                const text = prompt("Speak or type your command to Buddy:");
-                if (text) {
-                    document.getElementById('cmd-input').value = text;
-                    sendCmd();
                 }
             });
         }
@@ -1257,69 +1069,20 @@
                 if (connEl) {
                     connEl.textContent = `${stats.swarm.connection.from} -> ${stats.swarm.connection.to}`;
                 }
+            if (stats.hand) {
+                if (stats.hand.detected) {
+                    targetHandZoomScale = stats.hand.zoom_scale;
+                } else {
+                    targetHandZoomScale = 1.0;
+                }
             }
         }
 
-        // Auto-fetch mobile info to display local Wi-Fi IP on status bar
-        fetch('/api/mobile_info')
-        .then(res => res.json())
-        .then(info => {
-            document.getElementById('wifi-ip').textContent = `${info.ip}:${info.port}`;
-        })
-        .catch(err => {});
-
-        let lastSyncLogCount = 0;
         setInterval(() => {
             fetch('/api/telemetry')
             .then(res => res.json())
             .then(data => updateTelemetry(data));
-
-            fetch('/api/sync_logs')
-            .then(res => res.json())
-            .then(data => {
-                if (data.logs && data.logs.length > lastSyncLogCount) {
-                    const newLogs = data.logs.slice(lastSyncLogCount);
-                    newLogs.forEach(entry => {
-                        appendUserLog(entry.command);
-                        speakAndTypeBuddyLog(entry.response);
-                    });
-                    lastSyncLogCount = data.logs.length;
-                }
-            })
-            .catch(err => {});
-        function openMobileVoiceModal() {
-            document.getElementById('mobileVoiceModal').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('mobileModalInput').focus();
-            }, 100);
-        }
-
-        function closeMobileVoiceModal() {
-            document.getElementById('mobileVoiceModal').style.display = 'none';
-        }
-
-        function submitMobileVoiceModal() {
-            const val = document.getElementById('mobileModalInput').value.trim();
-            if (val) {
-                document.getElementById('cmd-input').value = val;
-                sendCmd();
-            }
-            closeMobileVoiceModal();
-            document.getElementById('mobileModalInput').value = '';
-        }
+        }, 350);
     </script>
-
-    <!-- MOBILE VOICE & TEXT INPUT MODAL OVERLAY -->
-    <div id="mobileVoiceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:999999; flex-direction:column; justify-content:center; align-items:center; padding:20px;">
-        <div style="background:rgba(10,15,25,0.95); border:2px solid #00f3ff; border-radius:12px; padding:24px; width:100%; max-width:360px; text-align:center; box-shadow:0 0 40px rgba(0,243,255,0.6);">
-            <div style="font-family:'Orbitron'; font-size:16px; color:#00f3ff; font-weight:800; margin-bottom:10px;">🎤 MOBILE VOICE COMMAND</div>
-            <div style="font-family:'Share Tech Mono'; font-size:12px; color:#ffb700; margin-bottom:16px;">Speak or type your command below:</div>
-            <input type="text" id="mobileModalInput" style="width:100%; height:48px; background:#000; border:1px solid #00f3ff; color:#00f3ff; padding:10px; font-family:'Share Tech Mono'; font-size:15px; border-radius:6px; margin-bottom:16px;" placeholder="TYPE OR SPEAK VOICE COMMAND..." onkeydown="if(event.key==='Enter') submitMobileVoiceModal()">
-            <div style="display:flex; gap:10px;">
-                <button onclick="closeMobileVoiceModal()" style="flex:1; height:44px; background:#ff2a5f; border:none; color:#fff; font-family:'Orbitron'; font-weight:700; border-radius:6px; cursor:pointer;">CANCEL</button>
-                <button onclick="submitMobileVoiceModal()" style="flex:1; height:44px; background:#00f3ff; border:none; color:#000; font-family:'Orbitron'; font-weight:800; border-radius:6px; cursor:pointer;">SEND</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

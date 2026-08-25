@@ -36,6 +36,7 @@ from tools.jarvis_hud import run_buddy_system_scan
 from tools.jarvis_workflows import activate_coding_mode, activate_work_mode, activate_relax_mode
 from tools.cleanup_tools import clean_temp_files
 from tools.camera_tools import capture_vision, get_last_camera_b64, toggle_live_vision
+from tools.hand_gesture_tools import toggle_hand_controller, get_hand_telemetry
 from tools.health_tools import run_health_check
 from tools.speed_tools import check_website_status
 from tools.battery_tools import get_battery_details
@@ -101,12 +102,14 @@ def get_telemetry_json():
         bat_val = int(battery.percent) if battery else 100
         mood = get_current_emotion()["badge"]
         swarm_data = swarm.get_real_swarm_telemetry()
+        hand_data = get_hand_telemetry()
         return {
             "cpu": cpu,
             "ram": ram,
             "battery": bat_val,
             "mood": mood,
-            "swarm": swarm_data
+            "swarm": swarm_data,
+            "hand": hand_data
         }
     except Exception:
         return {
@@ -163,6 +166,8 @@ def execute_command_string(user_input):
             result = run_quick_speed_test()
         elif action == "translate_phrase":
             result = translate_phrase(payload)
+        elif action == "toggle_hand_controller":
+            result = toggle_hand_controller(payload)
         elif action == "toggle_live_vision":
             result = toggle_live_vision(payload)
         elif action == "capture_vision":
