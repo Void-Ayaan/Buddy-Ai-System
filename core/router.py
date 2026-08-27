@@ -22,7 +22,15 @@ def route(text):
         return "locate_code_file", None
 
     # 0c. Autonomous Coding Agent Protocol
-    if any(p in text_lower for p in ["coding agent", "coder agent", "code agent", "write code", "generate code", "write python", "make app", "create script", "debug code", "fix code", "write script", "create website"]):
+    code_triggers = [
+        "coding agent", "coder agent", "code agent", "write code", "generate code", "write python", 
+        "make app", "create script", "debug code", "fix code", "write script", "create website",
+        "make a game", "make game", "make a website", "make website", "build a game", "build game",
+        "build a website", "build website", "create a game", "create game", "create a website", "create website",
+        "make me a", "build me a", "create me a", "flappy bird", "snake game", "arcade game",
+        "tic tac toe", "website game", "build app", "create app", "make a python", "build a python"
+    ]
+    if any(p in text_lower for p in code_triggers):
         return "code_agent", text
 
     # 1. Storage Breakdown & Drive Space Analyzer
