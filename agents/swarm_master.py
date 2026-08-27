@@ -9,7 +9,7 @@ from agents.media_agent import MediaAgent
 from agents.search_agent import SearchAgent
 from agents.workflow_agent import WorkflowAgent
 from agents.learner_agent import LearnerAgent
-from agents.hand_agent import HandAgent
+from agents.coding_agent import CodingAgent
 
 class SwarmMaster:
     """Master Orchestrator managing real-time AI Agent Swarm topology across 12 sub-agents."""
@@ -25,19 +25,19 @@ class SwarmMaster:
         self.search = SearchAgent()
         self.workflow = WorkflowAgent()
         self.learner = LearnerAgent()
-        self.hand = HandAgent()
+        self.coder = CodingAgent()
         self.active_agent = "AGENT-01"
         self.last_target = "ROUTER-NODE"
 
     def set_active_workflow(self, action):
         """Map every user intent action to its corresponding active sub-agent node."""
-        if action in ["hand_control", "toggle_hand_controller"]:
+        if action in ["code_agent", "generate_code", "debug_code"]:
             self.active_agent = "AGENT-12"
-            self.last_target = "HAND-KINEMATIK"
+            self.last_target = "CODING-ARCHITECT"
         elif action in ["learn_topic", "make_master_prompt", "word_definition", "get_capabilities"]:
             self.active_agent = "AGENT-11"
             self.last_target = "KNOWLEDGE-LEARNER"
-        elif action in ["capture_vision", "toggle_live_vision"]:
+        elif action in ["capture_vision"]:
             self.active_agent = "AGENT-03"
             self.last_target = "VISION-OPTIK"
         elif action in ["chat", "get_mood", "remember", "recall", "get_joke", "get_fact", "get_quote"]:
@@ -61,7 +61,7 @@ class SwarmMaster:
         elif action in ["coding_mode", "work_mode", "relax_mode", "self_upgrade", "add_note", "get_notes", "clear_notes", "timer"]:
             self.active_agent = "AGENT-10"
             self.last_target = "WORKFLOW-EXEC"
-        elif action in ["jarvis_scan", "system_info", "optimize_ram", "battery_details", "health_check", "get_uptime", "top_processes", "calculate_math", "convert_units", "time", "date", "open_chrome", "open_url", "open_app", "close_app", "minimize", "screenshot", "read_clipboard", "copy_clipboard"]:
+        elif action in ["jarvis_scan", "system_info", "optimize_ram", "battery_details", "health_check", "get_uptime", "top_processes", "calculate_math", "convert_units", "time", "date", "open_chrome", "open_url", "open_app", "close_app", "minimize", "screenshot", "read_clipboard", "copy_clipboard", "turbo_boost", "battery_saver", "change_theme"]:
             self.active_agent = "AGENT-04"
             self.last_target = "SYSTEM-EXEC"
         else:
@@ -82,7 +82,7 @@ class SwarmMaster:
             {"id": "AGENT-09", "name": "SEARCH", "status": "WORKING" if self.active_agent == "AGENT-09" else "IDLE"},
             {"id": "AGENT-10", "name": "WORKFLOW", "status": "WORKING" if self.active_agent == "AGENT-10" else "IDLE"},
             {"id": "AGENT-11", "name": "LEARNER", "status": "WORKING" if self.active_agent == "AGENT-11" else "IDLE"},
-            {"id": "AGENT-12", "name": "HAND-KINEMATIK", "status": "WORKING" if self.active_agent == "AGENT-12" else "IDLE"},
+            {"id": "AGENT-12", "name": "CODER", "status": "WORKING" if self.active_agent == "AGENT-12" else "IDLE"},
         ]
         return {
             "agents": agents,

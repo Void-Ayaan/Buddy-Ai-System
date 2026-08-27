@@ -21,6 +21,10 @@ def route(text):
     if any(p in text_lower for p in ["where is it", "where it is", "tell me where it is", "where is the file", "where is my file", "file location", "where is calculator"]):
         return "locate_code_file", None
 
+    # 0c. Autonomous Coding Agent Protocol
+    if any(p in text_lower for p in ["coding agent", "coder agent", "code agent", "write code", "generate code", "write python", "make app", "create script", "debug code", "fix code", "write script", "create website"]):
+        return "code_agent", text
+
     # 1. Storage Breakdown & Drive Space Analyzer
     if any(p in text_lower for p in ["disk usage", "storage breakdown", "disk space", "check drives", "drive space", "storage info"]):
         return "disk_storage", None

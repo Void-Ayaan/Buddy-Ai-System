@@ -236,6 +236,8 @@ def execute_command_string(user_input):
             result = fix_microphone()
         elif action == "dictation":
             result = trigger_dictation()
+        elif action == "code_agent":
+            result = swarm.coder.process_code_request(payload)
         elif action == "self_upgrade":
             result = self_upgrade(payload)
         elif action == "organize_files":
@@ -319,7 +321,7 @@ def execute_command_string(user_input):
             else:
                 result = "I don't have any facts stored about you yet."
         else:
-            result = ask_ai(user_input)
+            result = f"Executing protocol: {action}"
     else:
         cached_response = get_cached_response(user_input)
         if cached_response:
