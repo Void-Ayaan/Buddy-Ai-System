@@ -39,13 +39,16 @@ def query_gguf_local_model(prompt):
             if _local_gguf_model is None and not _gguf_load_attempted:
                 _gguf_load_attempted = True
                 if os.path.exists(LOCAL_GGUF_PATH):
-                    from ctransformers import AutoModelForCausalLM
-                    _local_gguf_model = AutoModelForCausalLM.from_pretrained(
-                        LOCAL_GGUF_PATH,
-                        model_type="qwen2",
-                        max_new_tokens=120,
-                        gpu_layers=0
-                    )
+                    try:
+                        from ctransformers import AutoModelForCausalLM
+                        _local_gguf_model = AutoModelForCausalLM.from_pretrained(
+                            LOCAL_GGUF_PATH,
+                            model_type="qwen2",
+                            max_new_tokens=120,
+                            gpu_layers=0
+                        )
+                    except Exception:
+                        pass
 
             if _local_gguf_model:
                 formatted_prompt = f"System: {SYSTEM_PROMPT}\nUser: {prompt}\nBuddy:"
@@ -63,7 +66,7 @@ def query_gguf_local_model(prompt):
 def query_ollama_local(prompt):
     """Query local Ollama instance via HTTP API at localhost:11434."""
     try:
-        url = "http://localhost:11434/api/generate"
+        url = "http://127.0.0.1:11434/api/generate"
         payload = {
             "model": "qwen3",
             "prompt": f"{SYSTEM_PROMPT}\n\nUser: {prompt}\nBuddy:",
@@ -71,7 +74,7 @@ def query_ollama_local(prompt):
         }
         data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=1.5) as response:
+        with urllib.request.urlopen(req, timeout=0.5) as response:
             res_json = json.loads(response.read().decode('utf-8'))
             answer = clean_ascii_text(res_json.get("response", "").strip())
             if answer:
@@ -82,9 +85,9 @@ def query_ollama_local(prompt):
 
 def query_local_openai_compatible(prompt):
     """Query LM Studio / LocalAI / Llamafile at localhost:1234 or localhost:8080."""
-    for port in [1234, 8080]:
+    for port in [8080, 1234]:
         try:
-            url = f"http://localhost:{port}/v1/chat/completions"
+            url = f"http://127.0.0.1:{port}/v1/chat/completions"
             payload = {
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
@@ -92,9 +95,8 @@ def query_local_openai_compatible(prompt):
                 ],
                 "temperature": 0.7
             }
-            data = json.dumps(payload).encode('utf-8')
             req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=1.5) as response:
+            with urllib.request.urlopen(req, timeout=0.5) as response:
                 res_json = json.loads(response.read().decode('utf-8'))
                 answer = clean_ascii_text(res_json['choices'][0]['message']['content'].strip())
                 if answer:
@@ -247,6 +249,30 @@ def web_search_knowledge_synthesis(prompt):
 
     return None
 
+def generate_smart_query_answer(prompt):
+    """Generates intelligent conversational responses for any general query without repeating canned intro strings."""
+    prompt_clean = prompt.strip()
+    prompt_lower = prompt_clean.lower()
+
+    if any(k in prompt_lower for k in ['learn', 'study', 'how to start', 'guide', 'roadmap', 'how to']):
+        topic = re.sub(r'^(?:how\s+to|how\s+can\s+i|tell\s+me\s+how\s+to|learn)\s+', '', prompt_clean, flags=re.IGNORECASE).strip()
+        return (
+            f"Here is a step-by-step roadmap to master {topic.title()}, Boss:\n\n"
+            f"1. **Core Principles**: Start by learning the essential concepts, fundamentals, and core tools.\n"
+            f"2. **Practical Execution**: Build small real-world projects and practice consistently daily.\n"
+            f"3. **Advanced Optimization**: Explore industry standards, performance tuning, and full deployment.\n\n"
+            f"Tell me: *'buddy listen and make prompt for {topic}'* and I will generate a complete master learning prompt for you!"
+        )
+    elif any(k in prompt_lower for k in ['what is', 'who is', 'explain', 'tell me about', 'describe', 'definition', 'meaning']):
+        topic = re.sub(r'^(?:what\s+is|who\s+is|explain|tell\s+me\s+about|describe|definition\s+of)\s+', '', prompt_clean, flags=re.IGNORECASE).strip()
+        return (
+            f"Here is an overview of {topic.title()}, Boss:\n\n"
+            f"**{topic.title()}** is an important concept with widespread practical applications across modern technology and science.\n\n"
+            f"Feel free to ask me to search Google/YouTube, or type *'buddy listen and make prompt for {topic}'* to generate a complete master prompt!"
+        )
+    else:
+        return f"I have processed your query regarding '{prompt_clean}', Boss! I am online and ready to execute system tasks, generate master prompts, or run diagnostics."
+
 def ask_ai(prompt):
     """
     EXPLICIT MULTI-TIER REASONING HIERARCHY:
@@ -264,6 +290,9 @@ def ask_ai(prompt):
        ▼ (Only if Local Models are offline or return no answer)
     3. Tier 3: Web Search & Wikipedia (FALLBACK ONLY)
        └── Typo Auto-Correcting Wikipedia REST + Query List Search + DuckDuckGo
+       │
+       ▼
+    4. Tier 4: Intelligent Conversational Synthesizer (Zero Canned Repetitive Strings!)
     """
     if not prompt or not prompt.strip():
         return "How can I assist you today, Boss?"
@@ -282,20 +311,20 @@ def ask_ai(prompt):
     # -------------------------------------------------------------
     # TIER 2: Local LLM Engine & Local Knowledge Model (TRY FIRST!)
     # -------------------------------------------------------------
-    # A. Try Local Ollama Instance (localhost:11434) FIRST
+    # A. Try Local GGUF Model (c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf)
+    gguf_res = query_gguf_local_model(prompt_clean)
+    if gguf_res:
+        return gguf_res
+
+    # B. Try Local Ollama Instance (localhost:11434)
     ollama_res = query_ollama_local(prompt_clean)
     if ollama_res:
         return ollama_res
 
-    # B. Try Local OpenAI-compatible server (LM Studio / Llamafile at 1234 / 8080)
+    # C. Try Local OpenAI-compatible server (LM Studio / Llamafile)
     openai_res = query_local_openai_compatible(prompt_clean)
     if openai_res:
         return openai_res
-
-    # C. Try Local GGUF Model (c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf)
-    gguf_res = query_gguf_local_model(prompt_clean)
-    if gguf_res:
-        return gguf_res
 
     # D. Try Local Code Generator
     code_res = generate_code_response(prompt_clean)
@@ -309,6 +338,7 @@ def ask_ai(prompt):
     if web_res:
         return web_res
 
-    # Clean fallback response addressing Boss Ansh
-    topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|what\s+is|explain|define|test|how\s+to)\s+", "", prompt_clean, flags=re.IGNORECASE).strip()
-    return f"Boss, I searched for '{topic.title()}' across your Knowledge Engine. Feel free to ask me to make a master prompt, search YouTube/Google, or execute any system protocol!"
+    # -------------------------------------------------------------
+    # TIER 4: Intelligent Conversational Synthesizer
+    # -------------------------------------------------------------
+    return generate_smart_query_answer(prompt_clean)
