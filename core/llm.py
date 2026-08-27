@@ -282,20 +282,20 @@ def ask_ai(prompt):
     # -------------------------------------------------------------
     # TIER 2: Local LLM Engine & Local Knowledge Model (TRY FIRST!)
     # -------------------------------------------------------------
-    # A. Try Local GGUF Model (c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf)
-    gguf_res = query_gguf_local_model(prompt_clean)
-    if gguf_res:
-        return gguf_res
-
-    # B. Try Local Ollama Instance (localhost:11434)
+    # A. Try Local Ollama Instance (localhost:11434) FIRST
     ollama_res = query_ollama_local(prompt_clean)
     if ollama_res:
         return ollama_res
 
-    # C. Try Local OpenAI-compatible server (LM Studio / Llamafile)
+    # B. Try Local OpenAI-compatible server (LM Studio / Llamafile at 1234 / 8080)
     openai_res = query_local_openai_compatible(prompt_clean)
     if openai_res:
         return openai_res
+
+    # C. Try Local GGUF Model (c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf)
+    gguf_res = query_gguf_local_model(prompt_clean)
+    if gguf_res:
+        return gguf_res
 
     # D. Try Local Code Generator
     code_res = generate_code_response(prompt_clean)
