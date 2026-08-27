@@ -127,6 +127,42 @@
 
         .theme-dot:hover { transform: scale(1.3); }
 
+        .tiny-emotion-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid var(--cyan-core);
+            border-radius: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: var(--silver-main);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 12px var(--cyan-glow);
+            transition: all 0.3s ease;
+        }
+
+        .tiny-emotion-label {
+            color: var(--silver-dim);
+            font-weight: bold;
+            font-size: 9px;
+            letter-spacing: 1px;
+        }
+
+        .tiny-emotion-emoji {
+            font-size: 14px;
+            line-height: 1;
+            filter: drop-shadow(0 0 6px var(--cyan-core));
+            display: inline-block;
+            animation: emojiPulse 2.5s infinite ease-in-out;
+        }
+
+        @keyframes emojiPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+        }
+
         .status-strip {
             display: flex;
             gap: 20px;
@@ -461,6 +497,11 @@
         </div>
         
         <div class="header-controls">
+            <div class="tiny-emotion-badge" id="tinyEmotionBadge" title="Buddy's Current Feeling">
+                <span class="tiny-emotion-label">FEELING:</span>
+                <span class="tiny-emotion-emoji" id="tinyEmotionEmoji">🫡</span>
+            </div>
+
             <button class="dock-toggle-btn" id="dockBtn" onclick="toggleCompactMode()">[ 🗖 CORNER WIDGET ]</button>
 
             <div class="theme-btn-group">
@@ -991,6 +1032,10 @@
                 speakAndTypeBuddyLog(data.response);
                 if (data.telemetry) updateTelemetry(data.telemetry);
                 if (data.theme) switchTheme(data.theme);
+                if (data.emoji) {
+                    const emoEl = document.getElementById('tinyEmotionEmoji');
+                    if (emoEl) emoEl.innerText = data.emoji;
+                }
 
                 if (data.compact_mode) {
                     if (!document.getElementById('hudBody').classList.contains('compact-mode')) {
