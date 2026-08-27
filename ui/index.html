@@ -503,7 +503,7 @@
 
             <div class="panel-label" style="margin-top: 14px;">
                 <span>REAL-TIME AGENT WORKFLOW</span>
-                <span>[ 12 NODES ]</span>
+                <span>[ 11 NODES ]</span>
             </div>
 
             <div class="swarm-live-list" id="swarm-node-list">
@@ -518,7 +518,6 @@
                 <div class="swarm-live-node"><span>AGENT-09: SEARCH</span><span class="state-idle" id="st-09">[ IDLE ]</span></div>
                 <div class="swarm-live-node"><span>AGENT-10: WORKFLOW</span><span class="state-idle" id="st-10">[ IDLE ]</span></div>
                 <div class="swarm-live-node"><span>AGENT-11: LEARNER</span><span class="state-idle" id="st-11">[ IDLE ]</span></div>
-                <div class="swarm-live-node"><span>AGENT-12: HAND-KINEMATIK</span><span class="state-idle" id="st-12">[ IDLE ]</span></div>
             </div>
         </div>
 
@@ -644,8 +643,6 @@
         // PURE CYBER CYAN 3D WEB CLUSTER ON PITCH OBSIDIAN BLACK (#000000)
         const canvas = document.getElementById('bgSwarmCanvas');
         const ctx = canvas.getContext('2d');
-        let handZoomScale = 1.0;
-        let targetHandZoomScale = 1.0;
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -774,9 +771,8 @@
             ctx.arc(centerX, centerY, orbRadius, 0, Math.PI * 2);
             ctx.fill();
 
-            handZoomScale += (targetHandZoomScale - handZoomScale) * 0.15;
             const outerSphereVoiceScale = 1.0 + (voicePulseScale - 1.0) * 0.40;
-            const R = 250 * outerSphereVoiceScale * handZoomScale;
+            const R = 250 * outerSphereVoiceScale;
             const focalLength = 360;
 
             const projectedDots = [];
@@ -970,6 +966,13 @@
             feed.scrollTop = feed.scrollHeight;
         }
 
+        function switchTheme(theme) {
+            document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+            if (theme && theme !== 'cyan' && theme !== 'default') {
+                document.body.classList.add('theme-' + theme);
+            }
+        }
+
         function sendCmd() {
             const input = document.getElementById('cmd-input');
             const val = input.value.trim();
@@ -987,6 +990,7 @@
             .then(data => {
                 speakAndTypeBuddyLog(data.response);
                 if (data.telemetry) updateTelemetry(data.telemetry);
+                if (data.theme) switchTheme(data.theme);
 
                 if (data.compact_mode) {
                     if (!document.getElementById('hudBody').classList.contains('compact-mode')) {
@@ -1069,12 +1073,6 @@
                 if (connEl) {
                     connEl.textContent = `${stats.swarm.connection.from} -> ${stats.swarm.connection.to}`;
                 }
-            if (stats.hand) {
-                if (stats.hand.detected) {
-                    targetHandZoomScale = stats.hand.zoom_scale;
-                } else {
-                    targetHandZoomScale = 1.0;
-                }
             }
         }
 
@@ -1082,7 +1080,7 @@
             fetch('/api/telemetry')
             .then(res => res.json())
             .then(data => updateTelemetry(data));
-        }, 350);
+        }, 4000);
     </script>
 </body>
 </html>
