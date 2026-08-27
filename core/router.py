@@ -38,6 +38,9 @@ def route(text):
         return "check_wifi", None
 
     # 5. Process Killer & Manager
+    if any(p in text_lower for p in ["kill all processes", "kill all apps", "kill all applications", "close all processes", "close all apps", "close all windows", "kill processes", "close background apps", "stop all processes"]):
+        return "kill_all_processes", None
+
     kill_match = re.search(r"\b(?:kill|stop|force close|terminate)\s+(?:process\s+)?([a-zA-Z0-9.\s]+)", text_lower)
     if kill_match:
         target = kill_match.group(1).strip()
@@ -76,15 +79,7 @@ def route(text):
     if text_lower.startswith("translate ") or " translate " in text_lower:
         return "translate_phrase", text
 
-    # 14. Buddy Vision & Hand Gesture Control
-    if any(p in text_lower for p in ["hand control", "gesture control", "pinch zoom", "hand gesture", "control with hand", "turn on hand control", "hand mode"]):
-        return "toggle_hand_controller", True
-    if any(p in text_lower for p in ["stop hand control", "turn off hand control", "close hand mode"]):
-        return "toggle_hand_controller", False
-    if any(p in text_lower for p in ["live vision", "continuous vision", "watch through camera", "keep watching", "turn on camera", "turn on live vision", "activate live vision", "live camera mode"]):
-        return "toggle_live_vision", True
-    if any(p in text_lower for p in ["stop live vision", "turn off live vision", "close camera"]):
-        return "toggle_live_vision", False
+    # 14. Buddy Vision & Camera Control
     if any(p in text_lower for p in ["see this", "look at this", "what do you see", "what's in front of camera", "what is in front of camera", "take picture", "take a picture", "take photo", "take a photo", "camera vision", "open camera", "what's inside", "what is inside", "whats inside", "whst's inside", "whsts inside", "what's in the image", "what is in the image", "whats in the image", "whst's in the image", "read image", "describe image", "read text in image", "what do you see in the photo", "what is in the photo", "give details of image", "give details of photo", "give image details", "details of image", "tell me about image", "tell me about photo", "show details of image"]):
         return "capture_vision", None
 
@@ -177,15 +172,15 @@ def route(text):
         return "weather", city
 
     # 33. PC Power & Security Controls
-    if any(p in text_lower for p in ["lock pc", "lock laptop", "lock my pc", "lock my laptop", "lock screen"]):
+    if any(p in text_lower for p in ["lock pc", "lock laptop", "lock my pc", "lock my laptop", "lock screen", "lock computer", "lock system", "lock"]):
         return "lock_pc", None
-    if any(p in text_lower for p in ["sleep pc", "sleep laptop", "put pc to sleep"]):
+    if any(p in text_lower for p in ["sleep pc", "sleep laptop", "put pc to sleep", "put laptop to sleep", "sleep computer", "sleep system", "sleep"]):
         return "sleep_pc", None
     if any(p in text_lower for p in ["cancel shutdown", "abort shutdown"]):
         return "cancel_shutdown", None
-    if any(p in text_lower for p in ["shutdown pc", "shutdown laptop", "turn off pc", "turn off laptop"]):
+    if any(p in text_lower for p in ["shutdown pc", "shutdown laptop", "turn off pc", "turn off laptop", "turn off computer", "power off pc", "power off laptop", "power off computer", "shutdown", "shut down", "turn off", "power off"]):
         return "shutdown_pc", None
-    if any(p in text_lower for p in ["restart pc", "restart laptop", "reboot pc", "reboot laptop"]):
+    if any(p in text_lower for p in ["restart pc", "restart laptop", "reboot pc", "reboot laptop", "restart computer", "reboot computer", "restart", "reboot"]):
         return "restart_pc", None
 
     # 34. Clipboard Management
@@ -257,6 +252,9 @@ def route(text):
         for filler in ["please", "for me", "the", "app", "window"]:
             target = target.replace(filler, "").strip()
         return "close_app", target
+
+    if any(p in text_lower for p in ["minimize all", "minimize all windows", "show desktop", "minimize everything", "hide all windows"]):
+        return "minimize_all", None
 
     if any(p in text_lower for p in ["minimize", "minimize window", "minimize tab"]):
         return "minimize", None

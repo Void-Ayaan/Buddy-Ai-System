@@ -25,7 +25,7 @@ from tools.spec_tools import get_hardware_specs
 from tools.swarm_tools import get_agent_swarm_status
 from tools.ram_cleaner import optimize_ram_memory
 from tools.password_tools import generate_secure_password
-from tools.kill_tools import kill_named_process
+from tools.kill_tools import kill_named_process, kill_all_user_processes
 from tools.ping_tools import check_ping_latency
 from tools.recycle_tools import empty_recycle_bin
 from tools.wifi_tools import check_wifi_signal_quality
@@ -35,8 +35,7 @@ from tools.translator_tools import translate_phrase
 from tools.jarvis_hud import run_buddy_system_scan
 from tools.jarvis_workflows import activate_coding_mode, activate_work_mode, activate_relax_mode
 from tools.cleanup_tools import clean_temp_files
-from tools.camera_tools import capture_vision, get_last_camera_b64, toggle_live_vision
-from tools.hand_gesture_tools import toggle_hand_controller, get_hand_telemetry
+from tools.camera_tools import capture_vision, get_last_camera_b64
 from tools.health_tools import run_health_check
 from tools.speed_tools import check_website_status
 from tools.battery_tools import get_battery_details
@@ -53,6 +52,7 @@ from tools.system_tools import (
     open_app,
     close_app,
     minimize_window,
+    minimize_all_windows,
     get_current_time,
     get_current_date,
     get_system_info,
@@ -102,14 +102,12 @@ def get_telemetry_json():
         bat_val = int(battery.percent) if battery else 100
         mood = get_current_emotion()["badge"]
         swarm_data = swarm.get_real_swarm_telemetry()
-        hand_data = get_hand_telemetry()
         return {
             "cpu": cpu,
             "ram": ram,
             "battery": bat_val,
             "mood": mood,
-            "swarm": swarm_data,
-            "hand": hand_data
+            "swarm": swarm_data
         }
     except Exception:
         return {
@@ -166,10 +164,6 @@ def execute_command_string(user_input):
             result = run_quick_speed_test()
         elif action == "translate_phrase":
             result = translate_phrase(payload)
-        elif action == "toggle_hand_controller":
-            result = toggle_hand_controller(payload)
-        elif action == "toggle_live_vision":
-            result = toggle_live_vision(payload)
         elif action == "capture_vision":
             result = capture_vision()
         elif action == "battery_details":
@@ -261,10 +255,16 @@ def execute_command_string(user_input):
             result = get_current_date()
         elif action == "system_info":
             result = get_system_info()
+        elif action == "kill_process":
+            result = kill_named_process(payload)
+        elif action == "kill_all_processes":
+            result = kill_all_user_processes()
         elif action == "close_app":
             result = close_app(payload)
         elif action == "minimize":
             result = minimize_window()
+        elif action == "minimize_all":
+            result = minimize_all_windows()
         elif action == "volume_up":
             result = volume_up()
         elif action == "volume_down":

@@ -167,3 +167,16 @@ def minimize_window():
     ctypes.windll.user32.keybd_event(VK_DOWN, 0, 2, 0)
     ctypes.windll.user32.keybd_event(VK_LWIN, 0, 2, 0)
     return "Minimized window."
+
+def minimize_all_windows():
+    """Minimize all windows / show desktop via Win32 keybd_event (Win + D)."""
+    try:
+        VK_LWIN = 0x5B
+        VK_D = 0x44
+        ctypes.windll.user32.keybd_event(VK_LWIN, 0, 0, 0)
+        ctypes.windll.user32.keybd_event(VK_D, 0, 0, 0)
+        ctypes.windll.user32.keybd_event(VK_D, 0, 2, 0)
+        ctypes.windll.user32.keybd_event(VK_LWIN, 0, 2, 0)
+        return "Minimized all windows and showing desktop, Boss!"
+    except Exception as e:
+        return f"Could not minimize all windows: {e}"
