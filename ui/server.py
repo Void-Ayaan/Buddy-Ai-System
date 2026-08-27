@@ -366,7 +366,9 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             data = json.loads(post_data) if post_data else {}
             cmd = data.get("command", "")
             res_text, should_compact = execute_command_string(cmd)
-            mood = get_current_emotion()["badge"]
+            emotion = get_current_emotion()
+            mood = emotion["badge"]
+            emoji = emotion.get("emoji", "🤖")
 
             action, payload = process_query_pipeline(cmd)[1:]
             active_theme = payload if action == "change_theme" else None
@@ -374,6 +376,7 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             response = {
                 "response": res_text,
                 "mood": mood,
+                "emoji": emoji,
                 "compact_mode": should_compact,
                 "telemetry": get_telemetry_json(),
                 "camera_b64": get_last_camera_b64(),

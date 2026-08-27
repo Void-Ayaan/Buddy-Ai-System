@@ -3,26 +3,31 @@ import random
 EMOTION_STATES = {
     "HAPPY": {
         "badge": "[ Mood: Happy (*) ]",
+        "emoji": "😊",
         "prefixes": ["Awesome!", "Great to hear from you, Boss!", "Delighted to help!"],
         "speech_rate": 185
     },
     "LOYAL": {
         "badge": "[ Mood: Loyal Assistant (o7) ]",
+        "emoji": "🫡",
         "prefixes": ["At your service, Boss!", "Right away!", "Always here for you, Boss."],
         "speech_rate": 175
     },
     "CYBER_CHILL": {
         "badge": "[ Mood: Cyber-Chill (==) ]",
+        "emoji": "😎",
         "prefixes": ["All systems optimal.", "Checked and loaded.", "Got it, Boss."],
         "speech_rate": 170
     },
     "THOUGHTFUL": {
         "badge": "[ Mood: Thoughtful (?) ]",
+        "emoji": "🧠",
         "prefixes": ["That's an intriguing question.", "Let me process that carefully.", "Here is my perspective."],
         "speech_rate": 165
     },
     "PLAYFUL": {
         "badge": "[ Mood: Playful (^_^) ]",
+        "emoji": "⚡",
         "prefixes": ["Haha, I like your style!", "You got it!", "Let's do this!"],
         "speech_rate": 180
     }
