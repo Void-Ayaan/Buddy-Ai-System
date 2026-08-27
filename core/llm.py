@@ -14,6 +14,7 @@ Keep responses concise, polite, and helpful. Always address the user as Boss."""
 
 LOCAL_GGUF_PATH = r"c:\buddy\models\Qwen3-1.7B-Q4_K_M.gguf"
 _local_gguf_model = None
+_gguf_load_attempted = False
 
 def clean_ascii_text(text):
     """Clean HTML tags and unicode artifacts for crisp presentation."""
@@ -21,41 +22,34 @@ def clean_ascii_text(text):
         return ""
     # Strip HTML tags
     clean = re.sub(r'<[^>]+>', '', text)
-    # Convert HTML entities like &quot; &#039;
-    clean = clean.replace('&quot;', '"').replace('&#039;', "'").replace('&amp;', '&')
+    # Convert HTML entities
+    clean = clean.replace('&quot;', '"').replace('&#039;', "'").replace('&amp;', '&').replace('&nbsp;', ' ')
     # Filter non-ASCII unicode artifacts
     clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
     return " ".join(clean.split())
 
-def get_local_gguf_model():
-    """Lazy-load c:\\buddy\\models\\Qwen3-1.7B-Q4_K_M.gguf GGUF model into memory."""
-    global _local_gguf_model
-    if _local_gguf_model is not None:
-        return _local_gguf_model
-
-    if os.path.exists(LOCAL_GGUF_PATH):
-        try:
-            from ctransformers import AutoModelForCausalLM
-            _local_gguf_model = AutoModelForCausalLM.from_pretrained(
-                LOCAL_GGUF_PATH,
-                model_type="qwen2",
-                max_new_tokens=120,
-                gpu_layers=0
-            )
-            return _local_gguf_model
-        except Exception:
-            pass
-    return None
-
 def query_gguf_local_model(prompt):
-    """Query local GGUF model directly."""
+    """Query local GGUF model directly with non-blocking timeout."""
+    global _local_gguf_model, _gguf_load_attempted
     res_container = [None]
+
     def _run():
+        global _local_gguf_model, _gguf_load_attempted
         try:
-            model = get_local_gguf_model()
-            if model:
+            if _local_gguf_model is None and not _gguf_load_attempted:
+                _gguf_load_attempted = True
+                if os.path.exists(LOCAL_GGUF_PATH):
+                    from ctransformers import AutoModelForCausalLM
+                    _local_gguf_model = AutoModelForCausalLM.from_pretrained(
+                        LOCAL_GGUF_PATH,
+                        model_type="qwen2",
+                        max_new_tokens=120,
+                        gpu_layers=0
+                    )
+
+            if _local_gguf_model:
                 formatted_prompt = f"System: {SYSTEM_PROMPT}\nUser: {prompt}\nBuddy:"
-                res = model(formatted_prompt)
+                res = _local_gguf_model(formatted_prompt)
                 if res and res.strip():
                     res_container[0] = res.strip()
         except Exception:
@@ -63,7 +57,7 @@ def query_gguf_local_model(prompt):
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
-    t.join(timeout=1.5)
+    t.join(timeout=0.6)
     return res_container[0]
 
 def query_ollama_local(prompt):
@@ -77,7 +71,7 @@ def query_ollama_local(prompt):
         }
         data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=3) as response:
+        with urllib.request.urlopen(req, timeout=1.5) as response:
             res_json = json.loads(response.read().decode('utf-8'))
             answer = clean_ascii_text(res_json.get("response", "").strip())
             if answer:
@@ -100,7 +94,7 @@ def query_local_openai_compatible(prompt):
             }
             data = json.dumps(payload).encode('utf-8')
             req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=3) as response:
+            with urllib.request.urlopen(req, timeout=1.5) as response:
                 res_json = json.loads(response.read().decode('utf-8'))
                 answer = clean_ascii_text(res_json['choices'][0]['message']['content'].strip())
                 if answer:
@@ -152,7 +146,7 @@ def query_wikipedia_knowledge(prompt):
     Handles typos like 'tonny stark' -> 'Tony Stark'!
     """
     try:
-        clean_topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|who\s+was|what\s+is|what\s+are|define|explain|where\s+is|history\s+of)\s+", "", prompt, flags=re.IGNORECASE).strip()
+        clean_topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|who\s+was|what\s+is|what\s+are|define|explain|where\s+is|history\s+of|how\s+to)\s+", "", prompt, flags=re.IGNORECASE).strip()
         if not clean_topic:
             clean_topic = prompt
 
@@ -161,8 +155,8 @@ def query_wikipedia_knowledge(prompt):
         # Step 1: Direct summary query
         try:
             url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(target_title)}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'BuddyAI/1.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            with urllib.request.urlopen(req, timeout=2.5) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 extract = clean_ascii_text(data.get('extract', ''))
                 if extract and len(extract) > 30:
@@ -173,15 +167,15 @@ def query_wikipedia_knowledge(prompt):
         # Step 2: OpenSearch Typo Auto-Correction (e.g. 'tonny stark' -> 'Tony Stark')
         try:
             search_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={urllib.parse.quote(clean_topic)}&limit=1&format=json"
-            req = urllib.request.Request(search_url, headers={'User-Agent': 'BuddyAI/1.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
+            req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            with urllib.request.urlopen(req, timeout=2.5) as response:
                 search_data = json.loads(response.read().decode('utf-8'))
                 if len(search_data) > 1 and search_data[1]:
                     target_title = search_data[1][0]
 
                     summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(target_title)}"
-                    req2 = urllib.request.Request(summary_url, headers={'User-Agent': 'BuddyAI/1.0'})
-                    with urllib.request.urlopen(req2, timeout=3) as response2:
+                    req2 = urllib.request.Request(summary_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                    with urllib.request.urlopen(req2, timeout=2.5) as response2:
                         data2 = json.loads(response2.read().decode('utf-8'))
                         extract2 = clean_ascii_text(data2.get('extract', ''))
                         if extract2 and len(extract2) > 30:
@@ -191,17 +185,20 @@ def query_wikipedia_knowledge(prompt):
 
         # Step 3: Wikipedia Query List Search Fallback
         try:
-            wiki_search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(clean_topic)}&format=json"
-            req3 = urllib.request.Request(wiki_search_url, headers={'User-Agent': 'BuddyAI/1.0'})
-            with urllib.request.urlopen(req3, timeout=3) as response3:
+            wiki_search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(prompt)}&format=json"
+            req3 = urllib.request.Request(wiki_search_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            with urllib.request.urlopen(req3, timeout=2.5) as response3:
                 data3 = json.loads(response3.read().decode('utf-8'))
                 search_results = data3.get('query', {}).get('search', [])
                 if search_results:
-                    first_res = search_results[0]
-                    res_title = first_res.get('title', '')
-                    res_snippet = clean_ascii_text(first_res.get('snippet', ''))
-                    if res_snippet and len(res_snippet) > 20:
-                        return f"Here is what I found regarding {res_title}, Boss:\n\n{res_snippet}"
+                    snippets = []
+                    for item in search_results[:2]:
+                        res_title = item.get('title', '')
+                        res_snippet = clean_ascii_text(item.get('snippet', ''))
+                        if res_snippet and len(res_snippet) > 20:
+                            snippets.append(f"**{res_title}**: {res_snippet}")
+                    if snippets:
+                        return f"Here is what I retrieved for your query, Boss:\n\n" + "\n\n".join(snippets)
         except Exception:
             pass
 
@@ -210,8 +207,8 @@ def query_wikipedia_knowledge(prompt):
     return None
 
 def web_search_knowledge_synthesis(prompt):
-    """Retrieve real-time web knowledge via Wikipedia (with typo correction) and DuckDuckGo."""
-    # Try Wikipedia Knowledge API first (with typo auto-correction)
+    """Retrieve real-time web knowledge via Wikipedia and DuckDuckGo."""
+    # Try Wikipedia Knowledge API first
     wiki_res = query_wikipedia_knowledge(prompt)
     if wiki_res:
         return wiki_res
@@ -251,11 +248,15 @@ def ask_ai(prompt):
        │
        ▼
     2. Tier 2: Local LLM Engine & Local Knowledge Model (TRY FIRST!)
-       ├── Queries Local GGUF Model / Ollama / LM Studio / Factual Knowledge Base FIRST.
-       └── IF Local Model generates an answer ➔ RETURN IMMEDIATELY! (Zero Web Search)
+       ├── Queries Local GGUF Model (c:\\buddy\\models\\Qwen3-1.7B-Q4_K_M.gguf)
+       ├── Queries Local Ollama Instance (localhost:11434)
+       ├── Queries Local OpenAI-Compatible Server (LM Studio / Llamafile)
+       ├── Queries Local Code Synthesizer
+       └── IF Local Model generates an answer ➔ RETURNS IMMEDIATELY! (Zero Web Search)
        │
-       ▼ (Only if Local Model is offline or explicit web search requested)
+       ▼ (Only if Local Models are offline or return no answer)
     3. Tier 3: Web Search & Wikipedia (FALLBACK ONLY)
+       └── Typo Auto-Correcting Wikipedia REST + Query List Search + DuckDuckGo
     """
     if not prompt or not prompt.strip():
         return "How can I assist you today, Boss?"
@@ -296,12 +297,11 @@ def ask_ai(prompt):
 
     # -------------------------------------------------------------
     # TIER 3: Web Search & Wikipedia (FALLBACK ONLY)
-    # (Only executed if Local Models are offline or return no answer)
     # -------------------------------------------------------------
     web_res = web_search_knowledge_synthesis(prompt_clean)
     if web_res:
         return web_res
 
-    # Final Conversational Fallback
-    topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|what\s+is|explain|define|test)\s+", "", prompt_clean, flags=re.IGNORECASE).strip()
-    return f"All 11-Agent Swarm systems are online and operational, Boss! Ready to craft master prompts, search the web, or execute any command."
+    # Clean fallback response addressing Boss Ansh
+    topic = re.sub(r"^(?:tell\s+me\s+about|who\s+is|what\s+is|explain|define|test|how\s+to)\s+", "", prompt_clean, flags=re.IGNORECASE).strip()
+    return f"Boss, I searched for '{topic.title()}' across your Knowledge Engine. Feel free to ask me to make a master prompt, search YouTube/Google, or execute any system protocol!"
