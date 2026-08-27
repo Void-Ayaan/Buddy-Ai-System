@@ -51,9 +51,26 @@ def route(text):
     if any(p in text_lower for p in ["ping", "check ping", "ping latency", "network ping", "my ping"]):
         return "check_ping", None
 
-    # 7. RAM Memory Cleaner & Optimizer
+    # 7. RAM Memory Cleaner & Optimizer / Turbo Boost Protocol
+    if any(p in text_lower for p in ["turbo boost", "boost pc", "speed up pc", "boost system", "performance boost", "turbo"]):
+        return "turbo_boost", None
+
     if any(p in text_lower for p in ["clean ram", "free ram", "optimize ram", "ram cleanup", "ram cleaner"]):
         return "optimize_ram", None
+
+    # 7b. Smart Battery Saver Mode
+    if any(p in text_lower for p in ["battery saver", "save battery", "battery health", "power saver mode"]):
+        return "battery_saver", None
+
+    # 7c. Dynamic Cyber HUD Theme Switcher
+    if any(p in text_lower for p in ["amber theme", "gold theme", "yellow theme"]):
+        return "change_theme", "amber"
+    if any(p in text_lower for p in ["emerald theme", "green theme", "matrix theme"]):
+        return "change_theme", "emerald"
+    if any(p in text_lower for p in ["violet theme", "purple theme", "magenta theme"]):
+        return "change_theme", "violet"
+    if any(p in text_lower for p in ["cyan theme", "blue theme", "default theme"]):
+        return "change_theme", "cyan"
 
     # 8. Secure Password Generator
     if any(p in text_lower for p in ["generate password", "secure password", "random password", "make password", "create password"]):

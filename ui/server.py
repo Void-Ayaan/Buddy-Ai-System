@@ -39,6 +39,7 @@ from tools.camera_tools import capture_vision, get_last_camera_b64
 from tools.health_tools import run_health_check
 from tools.speed_tools import check_website_status
 from tools.battery_tools import get_battery_details
+from tools.system_booster import run_turbo_boost, toggle_battery_saver
 from tools.dictionary_tools import get_word_definition
 from tools.converter_tools import convert_units
 from tools.process_tools import get_system_uptime, get_top_processes
@@ -253,6 +254,13 @@ def execute_command_string(user_input):
             result = get_current_time()
         elif action == "date":
             result = get_current_date()
+        elif action == "turbo_boost":
+            result = run_turbo_boost()
+        elif action == "battery_saver":
+            result = toggle_battery_saver()
+        elif action == "change_theme":
+            theme_name = payload if payload else "cyan"
+            result = f"HUD visualizer theme changed to {theme_name.upper()}, Boss!"
         elif action == "system_info":
             result = get_system_info()
         elif action == "kill_process":
@@ -360,12 +368,16 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             res_text, should_compact = execute_command_string(cmd)
             mood = get_current_emotion()["badge"]
 
+            action, payload = process_query_pipeline(cmd)[1:]
+            active_theme = payload if action == "change_theme" else None
+
             response = {
                 "response": res_text,
                 "mood": mood,
                 "compact_mode": should_compact,
                 "telemetry": get_telemetry_json(),
-                "camera_b64": get_last_camera_b64()
+                "camera_b64": get_last_camera_b64(),
+                "theme": active_theme
             }
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
