@@ -319,7 +319,7 @@ def execute_command_string(user_input):
             else:
                 result = "I don't have any facts stored about you yet."
         else:
-            result = f"Executing protocol: {action}"
+            result = ask_ai(user_input)
     else:
         cached_response = get_cached_response(user_input)
         if cached_response:
