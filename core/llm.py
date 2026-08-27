@@ -213,28 +213,35 @@ def web_search_knowledge_synthesis(prompt):
     if wiki_res:
         return wiki_res
 
-    # Try DuckDuckGo DDGS search
+    # Try DuckDuckGo DDGS search dynamically
     try:
-        try:
-            from ddgs import DDGS
-        except ImportError:
-            from duckduckgo_search import DDGS
+        import importlib
+        DDGS = None
+        for mod_name in ["duckduckgo_search", "ddgs"]:
+            try:
+                mod = importlib.import_module(mod_name)
+                DDGS = getattr(mod, "DDGS", None)
+                if DDGS:
+                    break
+            except Exception:
+                pass
 
-        with DDGS() as ddgs:
-            results = list(ddgs.text(prompt, max_results=3))
-            if results:
-                snippets = [r.get('body', '') for r in results if r.get('body')]
-                clean_snippets = []
-                for snip in snippets:
-                    ascii_snip = clean_ascii_text(snip)
-                    if len(ascii_snip) > 20:
-                        clean_snippets.append(ascii_snip)
+        if DDGS:
+            with DDGS() as ddgs:
+                results = list(ddgs.text(prompt, max_results=3))
+                if results:
+                    snippets = [r.get('body', '') for r in results if r.get('body')]
+                    clean_snippets = []
+                    for snip in snippets:
+                        ascii_snip = clean_ascii_text(snip)
+                        if len(ascii_snip) > 20:
+                            clean_snippets.append(ascii_snip)
 
-                if clean_snippets:
-                    combined = " ".join(clean_snippets[:2])
-                    if len(combined) > 400:
-                        combined = combined[:400] + "..."
-                    return f"Based on live search results, Boss: {combined}"
+                    if clean_snippets:
+                        combined = " ".join(clean_snippets[:2])
+                        if len(combined) > 400:
+                            combined = combined[:400] + "..."
+                        return f"Based on live search results, Boss: {combined}"
     except Exception:
         pass
 

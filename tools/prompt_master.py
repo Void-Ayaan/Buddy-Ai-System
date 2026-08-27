@@ -10,15 +10,23 @@ def search_topic_keywords(idea):
     
     def _search():
         try:
-            try:
-                from ddgs import DDGS
-            except ImportError:
-                from duckduckgo_search import DDGS
-            with DDGS() as ddgs:
-                results = list(ddgs.text(idea, max_results=2))
-                if results:
-                    snippets = [r.get('body', '') for r in results if r.get('body')]
-                    summary_container[0] = " ".join(snippets[:2])
+            import importlib
+            DDGS = None
+            for mod_name in ["duckduckgo_search", "ddgs"]:
+                try:
+                    mod = importlib.import_module(mod_name)
+                    DDGS = getattr(mod, "DDGS", None)
+                    if DDGS:
+                        break
+                except Exception:
+                    pass
+
+            if DDGS:
+                with DDGS() as ddgs:
+                    results = list(ddgs.text(idea, max_results=2))
+                    if results:
+                        snippets = [r.get('body', '') for r in results if r.get('body')]
+                        summary_container[0] = " ".join(snippets[:2])
         except Exception:
             pass
 
