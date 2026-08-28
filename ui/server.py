@@ -48,6 +48,7 @@ from tools.calc_tools import evaluate_math
 from tools.code_file_tools import save_code_to_desktop, locate_last_saved_file
 from tools.learner_tools import learn_topic_from_internet
 from tools.prompt_master import create_master_prompt
+from core.react_engine import react_engine
 from tools.system_tools import (
     open_chrome,
     open_website,
@@ -239,6 +240,8 @@ def execute_command_string(user_input):
             result = trigger_dictation()
         elif action == "code_agent":
             result = swarm.coder.process_code_request(payload)
+        elif action == "react_loop":
+            result = react_engine.execute_react_loop(user_input)
         elif action == "self_upgrade":
             result = check_and_run_auto_upgrade(force=True)
         elif action == "organize_files":
