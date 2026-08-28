@@ -972,39 +972,28 @@
             const cursorSpan = row.querySelector('.typing-cursor');
             
             // Clean text speech string for web synthesis
+            // Instant text display guarantee
+            bodySpan.innerHTML = formatLogContent(text);
+            if (cursorSpan) cursorSpan.remove();
+            feed.scrollTop = feed.scrollHeight;
+
             const cleanSpeechText = text.replace(/```[\s\S]*?```/g, "Master prompt generated. Click copy prompt to copy.").replace(/`[^`]+`/g, "");
 
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
-                utterance.rate = 1.05;
-
-                utterance.onstart = () => {
-                    isSpeaking = true;
-                };
-
-                utterance.onend = () => {
+                try {
+                    window.speechSynthesis.cancel();
+                    if (window.speechSynthesis.paused) {
+                        window.speechSynthesis.resume();
+                    }
+                    const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
+                    utterance.rate = 1.05;
+                    utterance.onstart = () => { isSpeaking = true; };
+                    utterance.onend = () => { isSpeaking = false; };
+                    utterance.onerror = () => { isSpeaking = false; };
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
                     isSpeaking = false;
-                    bodySpan.innerHTML = formatLogContent(text);
-                    if (cursorSpan) cursorSpan.remove();
-                    feed.scrollTop = feed.scrollHeight;
-                };
-
-                utterance.onerror = () => {
-                    isSpeaking = false;
-                    bodySpan.innerHTML = formatLogContent(text);
-                    if (cursorSpan) cursorSpan.remove();
-                    feed.scrollTop = feed.scrollHeight;
-                };
-
-                // Trigger voice-synced light sphere expansion
-                isSpeaking = true;
-                window.speechSynthesis.speak(utterance);
-                bodySpan.innerHTML = formatLogContent(text);
-                if (cursorSpan) cursorSpan.remove();
-            } else {
-                bodySpan.innerHTML = formatLogContent(text);
-                if (cursorSpan) cursorSpan.remove();
+                }
             }
             feed.scrollTop = feed.scrollHeight;
         }
