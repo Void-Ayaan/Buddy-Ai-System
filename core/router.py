@@ -1,7 +1,15 @@
 import re
+from core.nlp_engine import nlp_engine
 
 def route(text):
     text_lower = text.lower().strip()
+
+    # NLP Semantic Intent Matching for rephrased queries
+    if nlp_engine.semantic_similarity(text_lower, "my pc is running slow clean ram performance boost turbo") >= 0.35:
+        return "turbo_boost", None
+
+    if nlp_engine.semantic_similarity(text_lower, "close stop terminate all background user applications apps") >= 0.35:
+        return "kill_all_processes", None
 
     # 0a. Master Prompt Engineering Architect Protocol
     if any(p in text_lower for p in ["make prompt", "create prompt", "master prompt", "build prompt", "write prompt", "prompt engineering", "listen and make prompt"]):
