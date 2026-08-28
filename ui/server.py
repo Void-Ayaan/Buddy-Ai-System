@@ -356,7 +356,7 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Connection", "keep-alive")
             self.end_headers()
             try:
-                for _ in range(10):
+                while True:
                     telemetry = get_telemetry_json()
                     data_str = f"data: {json.dumps(telemetry)}\n\n"
                     self.wfile.write(data_str.encode("utf-8"))
@@ -430,15 +430,16 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(response).encode("utf-8"))
 
-class ReusableTCPServer(socketserver.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
+    daemon_threads = True
 
 def start_ui_server():
     server = None
     target_port = PORT
     for candidate_port in [PORT, 5001, 5002]:
         try:
-            server = ReusableTCPServer(("127.0.0.1", candidate_port), CyberHUDHandler)
+            server = ThreadedTCPServer(("127.0.0.1", candidate_port), CyberHUDHandler)
             target_port = candidate_port
             break
         except OSError:
@@ -446,7 +447,7 @@ def start_ui_server():
 
     if not server:
         # If all candidates fail, force bind with allow_reuse_address
-        server = ReusableTCPServer(("127.0.0.1", PORT), CyberHUDHandler)
+        server = ThreadedTCPServer(("127.0.0.1", PORT), CyberHUDHandler)
         target_port = PORT
 
     print(f"\n[ BUDDY CYBER HUD RUNNING AT http://127.0.0.1:{target_port} ]\n")
