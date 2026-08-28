@@ -11,6 +11,16 @@ def route(text):
     if nlp_engine.semantic_similarity(text_lower, "close stop terminate all background user applications apps") >= 0.35:
         return "kill_all_processes", None
 
+    # Instant Fast-Path Greetings & Introductions
+    if text_lower in ["hello", "hi", "hey", "hello buddy", "hey buddy", "hi buddy", "who are you", "what is your name", "who made you"]:
+        return "greeting", None
+
+    # Instant Fast-Path Time & Date
+    if any(p == text_lower or p in text_lower for p in ["what is the time", "tell me time", "current time", "what time is it"]):
+        return "time", None
+    if any(p == text_lower or p in text_lower for p in ["what is the date", "tell me date", "today's date", "what date is it"]):
+        return "date", None
+
     # 0a. Master Prompt Engineering Architect Protocol
     if any(p in text_lower for p in ["make prompt", "create prompt", "master prompt", "build prompt", "write prompt", "prompt engineering", "listen and make prompt"]):
         return "make_master_prompt", text
