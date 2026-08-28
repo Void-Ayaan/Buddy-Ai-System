@@ -349,6 +349,21 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(get_telemetry_json()).encode("utf-8"))
+        elif self.path == "/api/stream":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.end_headers()
+            try:
+                for _ in range(10):
+                    telemetry = get_telemetry_json()
+                    data_str = f"data: {json.dumps(telemetry)}\n\n"
+                    self.wfile.write(data_str.encode("utf-8"))
+                    self.wfile.flush()
+                    time.sleep(1.0)
+            except Exception:
+                pass
         elif self.path.startswith("/camera_view.jpg"):
             self.send_response(200)
             self.send_header("Content-Type", "image/jpeg")

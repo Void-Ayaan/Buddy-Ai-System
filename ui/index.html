@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BUDDY 3D HUD</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --bg-obsidian: #000000;
@@ -1057,6 +1058,24 @@
                 speakAndTypeBuddyLog('Communication failure with core server.');
             });
         }
+
+        // REAL-TIME SSE TELEMETRY BRIDGE CONNECTION
+        function connectTelemetryStream() {
+            if (!!window.EventSource) {
+                const source = new EventSource('/api/stream');
+                source.onmessage = function(e) {
+                    try {
+                        const telemetry = JSON.parse(e.data);
+                        if (telemetry) updateTelemetry(telemetry);
+                    } catch (err) {}
+                };
+                source.onerror = function(err) {
+                    source.close();
+                    setTimeout(connectTelemetryStream, 5000);
+                };
+            }
+        }
+        connectTelemetryStream();
 
         function triggerMic() {
             appendUserLog('[ 🎤 VOICE INPUT ACTIVE... ]');
