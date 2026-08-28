@@ -1,4 +1,5 @@
 import random
+from core.nlp_engine import nlp_engine
 
 EMOTION_STATES = {
     "HAPPY": {
@@ -37,18 +38,25 @@ CURRENT_MOOD = "LOYAL"
 
 def detect_emotion_from_input(text):
     global CURRENT_MOOD
-    text_lower = text.lower().strip()
+    
+    # NLP Sentiment & Emotion Analysis
+    analysis = nlp_engine.analyze_sentiment(text)
+    sentiment = analysis["sentiment"]
 
-    if any(p in text_lower for p in ["thank", "great job", "awesome", "good job", "love", "happy", "nice"]):
+    if sentiment == "POSITIVE":
         CURRENT_MOOD = "HAPPY"
-    elif any(p in text_lower for p in ["cool", "chill", "status", "cyber", "mode"]):
-        CURRENT_MOOD = "CYBER_CHILL"
-    elif any(p in text_lower for p in ["why", "how come", "explain", "think", "what if"]):
+    elif sentiment == "CURIOUS":
         CURRENT_MOOD = "THOUGHTFUL"
-    elif any(p in text_lower for p in ["haha", "lol", "joke", "fun", "game"]):
-        CURRENT_MOOD = "PLAYFUL"
-    else:
+    elif sentiment == "URGENT":
         CURRENT_MOOD = "LOYAL"
+    else:
+        text_lower = text.lower().strip()
+        if any(p in text_lower for p in ["cool", "chill", "status", "cyber", "mode"]):
+            CURRENT_MOOD = "CYBER_CHILL"
+        elif any(p in text_lower for p in ["haha", "lol", "joke", "fun", "game"]):
+            CURRENT_MOOD = "PLAYFUL"
+        else:
+            CURRENT_MOOD = "LOYAL"
 
     return CURRENT_MOOD
 
