@@ -40,6 +40,7 @@ from tools.health_tools import run_health_check
 from tools.speed_tools import check_website_status
 from tools.battery_tools import get_battery_details
 from tools.system_booster import run_turbo_boost, toggle_battery_saver
+from tools.auto_upgrader import start_auto_upgrader_background_daemon, check_and_run_auto_upgrade
 from tools.dictionary_tools import get_word_definition
 from tools.converter_tools import convert_units
 from tools.process_tools import get_system_uptime, get_top_processes
@@ -239,7 +240,7 @@ def execute_command_string(user_input):
         elif action == "code_agent":
             result = swarm.coder.process_code_request(payload)
         elif action == "self_upgrade":
-            result = self_upgrade(payload)
+            result = check_and_run_auto_upgrade(force=True)
         elif action == "organize_files":
             result = organize_folder(payload)
         elif action == "move_file":
@@ -431,6 +432,7 @@ def start_ui_server():
         target_port = PORT
 
     print(f"\n[ BUDDY CYBER HUD RUNNING AT http://127.0.0.1:{target_port} ]\n")
+    start_auto_upgrader_background_daemon()
     open_standalone_app_window(f"http://127.0.0.1:{target_port}")
     server.serve_forever()
 
