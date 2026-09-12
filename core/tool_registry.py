@@ -22,6 +22,8 @@ from tools.dictionary_tools import get_word_definition
 from tools.weather_tools import get_weather
 from tools.news_tools import get_latest_news
 from tools.notes_tools import add_note, get_notes, clear_notes
+from tools.system_tools import open_app
+from tools.reminder_tools import parse_timer_command
 
 TOOL_REGISTRY = {
     "turbo_boost": {
@@ -107,6 +109,18 @@ TOOL_REGISTRY = {
     "get_notes": {
         "description": "Retrieve all saved user notes",
         "func": lambda args: get_notes()
+    },
+    "open_app": {
+        "description": "Open or launch a desktop application",
+        "func": lambda args: open_app(args.get("app_name", "vscode"))
+    },
+    "locate_last_saved_file": {
+        "description": "Locate and open the last saved code project file",
+        "func": lambda args: locate_last_saved_file()
+    },
+    "set_timer": {
+        "description": "Set a timer or reminder alarm",
+        "func": lambda args: parse_timer_command(args.get("prompt", "25 minutes"))
     }
 }
 
