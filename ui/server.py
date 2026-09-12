@@ -9,6 +9,8 @@ if BASE_DIR not in sys.path:
 import http.server
 import socketserver
 import json
+import time
+from datetime import datetime
 import psutil
 import threading
 import subprocess
@@ -322,6 +324,8 @@ def execute_command_string(user_input):
                 else:
                     facts = ", ".join([f"{k} is {v}" for k, v in data.items()])
                     result = f"Here is what I remember: {facts}."
+        elif action == "letter_counter":
+            result = payload
         elif action == "greeting":
             result = "Hello Boss! I am Buddy, your 12-Agent Autonomous AI Swarm. All systems are online and running at peak performance!"
         elif action == "time":
