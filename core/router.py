@@ -11,6 +11,11 @@ def route(text):
     if nlp_engine.semantic_similarity(text_lower, "close stop terminate all background user applications apps") >= 0.35:
         return "kill_all_processes", None
 
+    # Instant Fast-Path Letter Counter Reasoning
+    letter_ans = nlp_engine.count_letter_occurrences(text)
+    if letter_ans:
+        return "letter_counter", letter_ans
+
     # Instant Fast-Path Greetings & Introductions
     if text_lower in ["hello", "hi", "hey", "hello buddy", "hey buddy", "hi buddy", "who are you", "what is your name", "who made you"]:
         return "greeting", None
