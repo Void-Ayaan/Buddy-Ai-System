@@ -29,8 +29,17 @@ class ReActEngine:
         prompt_lower = prompt.lower()
         plan = []
 
-        # 1. Code / Bug Fix / Script Generation
-        if any(k in prompt_lower for k in ["code", "script", "fix", "bug", "website", "app"]):
+        # 1. Open App / Code Editor
+        if any(k in prompt_lower for k in ["code editor", "open vscode", "open editor", "open notepad", "open chrome"]):
+            app_name = "vscode" if "code editor" in prompt_lower or "vscode" in prompt_lower else "notepad"
+            plan.append({"tool": "open_app", "args": {"app_name": app_name}})
+
+        # 2. Locate Last Python Project / Saved File
+        if any(k in prompt_lower for k in ["last python project", "last project", "last saved file", "pull up my last"]):
+            plan.append({"tool": "locate_last_saved_file", "args": {}})
+
+        # 3. Code / Bug Fix / Script Generation
+        if any(k in prompt_lower for k in ["code", "script", "fix", "bug", "website", "app"]) and not any(k in prompt_lower for k in ["code editor", "last python project"]):
             if "website" in prompt_lower or "restaurant" in prompt_lower:
                 plan.append({"tool": "code_agent", "args": {"idea": prompt}})
             elif "prompt" in prompt_lower:
@@ -38,31 +47,35 @@ class ReActEngine:
             else:
                 plan.append({"tool": "save_code_to_desktop", "args": {"code": "# Fixed Python Automation Script\nprint('Script executed successfully, Boss!')\n", "filename": "fixed_script.py"}})
 
-        # 2. RAM / Performance / Turbo Boost
+        # 4. Timer / Alarm
+        if any(k in prompt_lower for k in ["timer", "remind me in", "set alarm", "minutes"]):
+            plan.append({"tool": "set_timer", "args": {"prompt": prompt}})
+
+        # 5. RAM / Performance / Turbo Boost
         if any(k in prompt_lower for k in ["ram", "turbo", "boost", "speed up", "performance"]):
             plan.append({"tool": "turbo_boost", "args": {}})
 
-        # 3. Clean Temp Files
+        # 6. Clean Temp Files
         if any(k in prompt_lower for k in ["clean temp", "clear temp", "temp cache", "junk"]):
             plan.append({"tool": "clean_temp", "args": {}})
 
-        # 4. Kill Processes
+        # 7. Kill Processes
         if any(k in prompt_lower for k in ["kill", "close all", "stop background"]):
             plan.append({"tool": "kill_all_processes", "args": {}})
 
-        # 5. Speed Test / Network
+        # 8. Speed Test / Network
         if any(k in prompt_lower for k in ["speed test", "network speed", "internet speed"]):
             plan.append({"tool": "run_speed_test", "args": {}})
 
-        # 6. Lock / Power
-        if any(k in prompt_lower for k in ["lock", "lock pc", "screen lock"]):
+        # 9. Lock / Power
+        if any(k in prompt_lower for k in ["lock pc", "screen lock"]) and not "block" in prompt_lower:
             plan.append({"tool": "lock_pc", "args": {}})
 
-        # 7. Weather
+        # 10. Weather
         if "weather" in prompt_lower:
             plan.append({"tool": "get_weather", "args": {"city": "London"}})
 
-        # 8. Notes
+        # 11. Notes
         if "note" in prompt_lower:
             plan.append({"tool": "add_note", "args": {"note": prompt}})
 

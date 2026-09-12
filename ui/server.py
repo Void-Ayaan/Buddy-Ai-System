@@ -15,7 +15,7 @@ import psutil
 import threading
 import subprocess
 
-from core.pipeline import process_query_pipeline, PIPELINE_ACTION, PIPELINE_QUESTION
+from core.pipeline import process_query_pipeline, PIPELINE_ACTION, PIPELINE_QUESTION, PIPELINE_REACT
 from agents.swarm_master import swarm
 from core.self_upgrader import self_upgrade
 from core.emotions import detect_emotion_from_input, get_current_emotion, format_emotional_response
@@ -130,6 +130,11 @@ def execute_command_string(user_input):
     # Track active agent workflow in real-time
     swarm.set_active_workflow(action)
     should_compact = False
+
+    if pipeline_type == PIPELINE_REACT:
+        from core.react_engine import react_engine
+        result = react_engine.execute_react_loop(user_input)
+        return result, should_compact
 
     if pipeline_type == PIPELINE_ACTION:
         if action in ["open_chrome", "open_url", "open_app", "coding_mode", "work_mode", "google_search", "youtube_search", "minimize"]:
@@ -397,6 +402,11 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             data = json.loads(post_data) if post_data else {}
             cmd = data.get("command", "")
             res_text, should_compact = execute_command_string(cmd)
+            try:
+                from memory.memory_manager import add_chat_turn
+                add_chat_turn(cmd, res_text)
+            except Exception:
+                pass
             emotion = get_current_emotion()
             mood = emotion["badge"]
             emoji = emotion.get("emoji", "🤖")

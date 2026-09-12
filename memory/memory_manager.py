@@ -79,3 +79,23 @@ def get_memory_summary():
             parts.append(f"The user's {k} is {v}.")
 
     return " ".join(parts)
+
+SESSION_CHAT_HISTORY = []
+
+def add_chat_turn(user_msg, buddy_msg):
+    """Store recent conversational turns for multi-turn context awareness."""
+    global SESSION_CHAT_HISTORY
+    if user_msg and buddy_msg:
+        SESSION_CHAT_HISTORY.append({"user": user_msg, "buddy": buddy_msg})
+        if len(SESSION_CHAT_HISTORY) > 10:
+            SESSION_CHAT_HISTORY = SESSION_CHAT_HISTORY[-10:]
+
+def get_recent_chat_context():
+    """Format recent turns into prompt context string."""
+    if not SESSION_CHAT_HISTORY:
+        return ""
+    context_lines = ["\n[ RECENT CONVERSATION HISTORY ]"]
+    for turn in SESSION_CHAT_HISTORY[-4:]:
+        context_lines.append(f"User: {turn['user']}")
+        context_lines.append(f"Buddy: {turn['buddy']}")
+    return "\n".join(context_lines)

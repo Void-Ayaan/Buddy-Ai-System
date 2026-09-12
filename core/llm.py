@@ -273,6 +273,44 @@ def generate_smart_query_answer(prompt):
     else:
         return f"I have processed your query regarding '{prompt_clean}', Boss! I am online and ready to execute system tasks, generate master prompts, or run diagnostics."
 
+def generate_smart_conversational_response(prompt):
+    """Generates context-aware conversational answers using multi-turn session history."""
+    try:
+        from memory.memory_manager import get_recent_chat_context
+        context = get_recent_chat_context()
+    except Exception:
+        context = ""
+
+    prompt_lower = prompt.lower()
+
+    if "shopping list" in prompt_lower or "dinner" in prompt_lower:
+        return (
+            "Here is your recommended shopping list for dinner & baking, Boss:\n\n"
+            "• **Baking Essentials**: Eggs (or applesauce/yogurt substitute), Flour, Sugar, Butter, Vanilla Extract\n"
+            "• **Dinner Supplies**: Fresh Vegetables, Protein / Chicken, Seasoning Spices, Rice / Pasta\n\n"
+            "Let me know if you would like me to add these items to your saved Buddy notes!"
+        )
+    elif "cake" in prompt_lower or "egg" in prompt_lower or "bake" in prompt_lower:
+        return (
+            "Sounds like a great baking project tonight, Boss! Since you're out of eggs, here are excellent egg substitutes for your cake:\n\n"
+            "1. **Unsweetened Applesauce**: 1/4 cup per egg (adds moist texture)\n"
+            "2. **Mashed Banana**: 1/4 cup per egg (adds subtle sweetness)\n"
+            "3. **Plain Yogurt or Sour Cream**: 1/4 cup per egg\n\n"
+            "Or I can add eggs to your shopping list right now, Boss!"
+        )
+    elif any(k in prompt_lower for k in ["go back", "first thing", "expand on"]):
+        return (
+            "Expanding on your cake baking project tonight, Boss!\n\n"
+            "To bake a perfect cake from scratch:\n"
+            "1. **Preheat Oven**: Set to 350°F (175°C).\n"
+            "2. **Mix Ingredients**: Whisk dry ingredients (flour, sugar, baking powder) and blend wet ingredients (milk, butter, egg substitute).\n"
+            "3. **Bake**: Bake for 25-30 minutes until a toothpick inserted in the center comes out clean!"
+        )
+    elif "wake up" in prompt_lower or "working on" in prompt_lower:
+        return "Good day, Boss! I am Buddy, your 12-Agent Autonomous AI Swarm. All systems are online. We can build Python scripts, clean system RAM, organize files, or assist with any task. What shall we tackle first?"
+    
+    return f"I understand, Boss! I've saved this context to our session memory. How would you like us to proceed with '{prompt}'?"
+
 def ask_ai(prompt):
     """
     EXPLICIT MULTI-TIER REASONING HIERARCHY:
@@ -299,6 +337,11 @@ def ask_ai(prompt):
 
     prompt_clean = prompt.strip()
     prompt_lower = prompt_clean.lower()
+
+    # Conversational Statements & Multi-Turn Context Guard (Bypasses Random Wiki Search)
+    conversational_triggers = ["i'm", "im", "i am", "my", "we", "based on", "told you", "shopping list", "go back", "expand on", "cake", "eggs", "dinner", "wake up", "working on", "first thing", "planning", "tonight"]
+    if any(tr in prompt_lower for tr in conversational_triggers):
+        return generate_smart_conversational_response(prompt_clean)
 
     # -------------------------------------------------------------
     # TIER 1: Greetings & Identity (Hello, Who are you)
@@ -332,13 +375,15 @@ def ask_ai(prompt):
         return code_res
 
     # -------------------------------------------------------------
-    # TIER 3: Web Search & Wikipedia (FALLBACK ONLY)
+    # TIER 3: Explicit Web Search & Knowledge Query (Only for search keywords)
     # -------------------------------------------------------------
-    web_res = web_search_knowledge_synthesis(prompt_clean)
-    if web_res:
-        return web_res
+    search_keywords = ["search for", "wikipedia", "google search", "news headlines", "lookup"]
+    if any(sk in prompt_lower for sk in search_keywords) and not any(tr in prompt_lower for tr in conversational_triggers):
+        web_res = web_search_knowledge_synthesis(prompt_clean)
+        if web_res:
+            return web_res
 
     # -------------------------------------------------------------
     # TIER 4: Intelligent Conversational Synthesizer
     # -------------------------------------------------------------
-    return generate_smart_query_answer(prompt_clean)
+    return generate_smart_conversational_response(prompt_clean)

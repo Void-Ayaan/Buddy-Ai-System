@@ -20,10 +20,10 @@ def route(text):
     if text_lower in ["hello", "hi", "hey", "hello buddy", "hey buddy", "hi buddy", "who are you", "what is your name", "who made you"]:
         return "greeting", None
 
-    # Instant Fast-Path Time & Date
-    if any(p == text_lower or p in text_lower for p in ["what is the time", "tell me time", "current time", "what time is it"]):
+    # Instant Fast-Path Time & Date (Strict matching to prevent 'today' in complex queries from triggering date!)
+    if text_lower in ["time", "what time is it", "what is the time", "tell me time", "current time"]:
         return "time", None
-    if any(p == text_lower or p in text_lower for p in ["what is the date", "tell me date", "today's date", "what date is it"]):
+    if text_lower in ["date", "what date is it", "what is the date", "today's date", "tell me date", "what is today's date"]:
         return "date", None
 
     # 0a. Master Prompt Engineering Architect Protocol
@@ -84,8 +84,8 @@ def route(text):
         if target not in ["it", "this", "window", "app"]:
             return "kill_process", target
 
-    # 6. Network Ping & Latency Inspector
-    if any(p in text_lower for p in ["ping", "check ping", "ping latency", "network ping", "my ping"]):
+    # 6. Network Ping & Latency Inspector (Strict word boundaries to prevent 'shopping' matching 'ping'!)
+    if re.search(r"\b(?:ping|check\s+ping|ping\s+latency|network\s+ping|my\s+ping)\b", text_lower):
         return "check_ping", None
 
     # 7. RAM Memory Cleaner & Optimizer / Turbo Boost Protocol
@@ -290,10 +290,10 @@ def route(text):
     if any(p in text_lower for p in ["timer", "remind me in", "set alarm"]):
         return "timer", text
 
-    # 39. Time & Date Queries
-    if "time" in text_lower:
+    # 39. Time & Date Queries (Strict matching only)
+    if text_lower.strip() in ["time", "what time is it", "what is the time", "current time"]:
         return "time", None
-    if any(p in text_lower for p in ["date", "today", "toady"]):
+    if text_lower.strip() in ["date", "what date is it", "what is the date", "today's date", "what is today's date"]:
         return "date", None
 
     # 40. Close & Minimize Window Controls
