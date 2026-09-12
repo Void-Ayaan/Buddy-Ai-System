@@ -1,6 +1,7 @@
 import re
 from core.router import route
 from core.react_engine import react_engine
+from core.nlp_engine import nlp_engine
 
 PIPELINE_ACTION = "ACTION_TASK"
 PIPELINE_QUESTION = "GENERAL_QUESTION"
@@ -27,7 +28,7 @@ TYPO_DICTIONARY = {
 
 def preprocess_and_autocorrect_input(text):
     """
-    STAGE 1: Pre-process & Fuzzy Auto-Correction (<1 ms)
+    STAGE 1: Pre-process & Deep NLP Context Analysis (<1 ms)
     - Normalizes spaces, strips special characters.
     - Auto-corrects misspelled words, phonetic typos, and colloquial phrasing.
     """
@@ -44,15 +45,21 @@ def preprocess_and_autocorrect_input(text):
 
 def classify_intent(text):
     """
-    STAGE 2: Intent Classification & Route Mapping (<3 ms)
+    STAGE 2: Deep Intent Classification & Route Mapping (<3 ms)
+    - Uses NLPEngine Deep Intent Analysis (CODING, SYSTEM_CONTROL, REASONING, CHAT).
     - ReAct Multi-Step Loop Check (Multi-intent NLP Function Calling).
     - Single-intent System actions vs Knowledge reasoning questions.
     """
+    # 1. Deep Intent NLP Analysis
+    deep_intent = nlp_engine.parse_deep_intent(text)
+
+    # 2. ReAct Multi-Step Loop Check
     if react_engine.is_multi_step_request(text):
         plan = react_engine.decompose_into_plan(text)
         if len(plan) >= 2:
             return PIPELINE_REACT, "react_loop", text
 
+    # 3. Router Intent Resolution
     action, payload = route(text)
     
     if action != "chat":
@@ -62,7 +69,7 @@ def classify_intent(text):
 
 def process_query_pipeline(user_input):
     """
-    3-STAGE HIGH-PERFORMANCE QUERY PIPELINE + REACT ENGINE ARCHITECTURE:
+    3-STAGE HIGH-PERFORMANCE QUERY PIPELINE + REACT ENGINE + DEEP NLP ARCHITECTURE:
     
     User Query Input
       │
@@ -70,7 +77,7 @@ def process_query_pipeline(user_input):
     Stage 1: Pre-process & Fuzzy Auto-Correction (<1 ms)
       │
       ▼
-    Stage 2: Intent Classification & ReAct Multi-Step Loop Engine (<3 ms)
+    Stage 2: Deep NLP Intent Classification & ReAct Engine (<3 ms)
       │
       ▼
     Stage 3: Sub-10ms Action Execution, ReAct Tool Loop, or Local LLM Model Reasoning
