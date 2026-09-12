@@ -51,7 +51,9 @@ def route(text):
         "make a game", "make game", "make a website", "make website", "build a game", "build game",
         "build a website", "build website", "create a game", "create game", "create a website", "create website",
         "make me a", "build me a", "create me a", "flappy bird", "snake game", "arcade game",
-        "tic tac toe", "website game", "build app", "create app", "make a python", "build a python"
+        "tic tac toe", "website game", "build app", "create app", "make a python", "build a python",
+        "write a complete", "write a script", "write a python", "pygame", "python script", "bouncing block",
+        "bouncing ball", "write a program", "create a script", "generate script"
     ]
     if any(p in text_lower for p in code_triggers):
         return "code_agent", text
@@ -223,16 +225,16 @@ def route(text):
         city = city_match.group(1).strip() if city_match else None
         return "weather", city
 
-    # 33. PC Power & Security Controls
-    if any(p in text_lower for p in ["lock pc", "lock laptop", "lock my pc", "lock my laptop", "lock screen", "lock computer", "lock system", "lock"]):
+    # 33. PC Power & Security Controls (Strict word boundaries to prevent 'block' matching 'lock')
+    if re.search(r"\b(?:lock\s+pc|lock\s+laptop|lock\s+my\s+pc|lock\s+my\s+laptop|lock\s+screen|lock\s+computer|lock\s+system)\b", text_lower) or text_lower.strip() == "lock":
         return "lock_pc", None
-    if any(p in text_lower for p in ["sleep pc", "sleep laptop", "put pc to sleep", "put laptop to sleep", "sleep computer", "sleep system", "sleep"]):
+    if re.search(r"\b(?:sleep\s+pc|sleep\s+laptop|put\s+pc\s+to\s+sleep|sleep\s+computer|sleep\s+system)\b", text_lower) or text_lower.strip() == "sleep":
         return "sleep_pc", None
     if any(p in text_lower for p in ["cancel shutdown", "abort shutdown"]):
         return "cancel_shutdown", None
-    if any(p in text_lower for p in ["shutdown pc", "shutdown laptop", "turn off pc", "turn off laptop", "turn off computer", "power off pc", "power off laptop", "power off computer", "shutdown", "shut down", "turn off", "power off"]):
+    if re.search(r"\b(?:shutdown\s+pc|shutdown\s+laptop|turn\s+off\s+pc|turn\s+off\s+laptop|turn\s+off\s+computer|power\s+off\s+pc|power\s+off\s+laptop|power\s+off\s+computer|shutdown|shut\s+down)\b", text_lower):
         return "shutdown_pc", None
-    if any(p in text_lower for p in ["restart pc", "restart laptop", "reboot pc", "reboot laptop", "restart computer", "reboot computer", "restart", "reboot"]):
+    if re.search(r"\b(?:restart\s+pc|restart\s+laptop|reboot\s+pc|reboot\s+laptop|restart\s+computer|reboot\s+computer|restart|reboot)\b", text_lower):
         return "restart_pc", None
 
     # 34. Clipboard Management
