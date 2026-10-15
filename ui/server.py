@@ -349,6 +349,12 @@ def execute_command_string(user_input):
             result = ask_ai(user_input)
             save_cached_response(user_input, result)
 
+    try:
+        from memory.memory_manager import add_chat_turn
+        add_chat_turn(user_input, result)
+    except Exception:
+        pass
+
     return result, should_compact
 
 class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
@@ -471,6 +477,11 @@ def start_ui_server():
         target_port = PORT
 
     print(f"\n[ BUDDY CYBER HUD RUNNING AT http://127.0.0.1:{target_port} ]\n")
+    try:
+        from core.llamafile_manager import ensure_llamafile_server_running
+        threading.Thread(target=ensure_llamafile_server_running, daemon=True).start()
+    except Exception as e:
+        print(f"[Warning] Failed to pre-warm LLM daemon: {e}")
     start_auto_upgrader_background_daemon()
     open_standalone_app_window(f"http://127.0.0.1:{target_port}")
     server.serve_forever()

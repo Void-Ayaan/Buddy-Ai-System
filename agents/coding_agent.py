@@ -43,8 +43,85 @@ class CodingAgent:
         # STAGE 3: Autonomous Full-Stack Build & Desktop Deployment
         # =====================================================================
 
+        # A0. PYGAME BOUNCING BLOCK / ANIMATION
+        if "pygame" in idea_lower or "bouncing" in idea_lower or ("bounce" in idea_lower and "block" in idea_lower):
+            code = '''"""
+Bouncing Blocks Extreme Animation
+Engineered Autonomously by Buddy AI Swarm
+"""
+import pygame
+import random
+import sys
+
+pygame.init()
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Buddy AI - Bouncing Block Extreme")
+clock = pygame.time.Clock()
+
+class Block:
+    def __init__(self):
+        self.size = random.randint(25, 55)
+        self.x = random.randint(0, WIDTH - self.size)
+        self.y = random.randint(0, HEIGHT - self.size)
+        self.vx = random.choice([-5, -4, -3, 3, 4, 5])
+        self.vy = random.choice([-5, -4, -3, 3, 4, 5])
+        self.color = [random.randint(50, 255), random.randint(50, 255), random.randint(50, 255)]
+        self.trail = []
+
+    def update(self):
+        self.trail.append((self.x + self.size//2, self.y + self.size//2))
+        if len(self.trail) > 15:
+            self.trail.pop(0)
+
+        self.x += self.vx
+        self.y += self.vy
+
+        if self.x <= 0 or self.x + self.size >= WIDTH:
+            self.vx = -self.vx
+            self.color = [random.randint(80, 255), random.randint(80, 255), random.randint(80, 255)]
+        if self.y <= 0 or self.y + self.size >= HEIGHT:
+            self.vy = -self.vy
+            self.color = [random.randint(80, 255), random.randint(80, 255), random.randint(80, 255)]
+
+    def draw(self, surf):
+        for i, pos in enumerate(self.trail):
+            alpha = int(255 * (i / len(self.trail)))
+            radius = max(2, int((self.size // 3) * (i / len(self.trail))))
+            pygame.draw.circle(surf, self.color, pos, radius)
+        rect = pygame.Rect(self.x, self.y, self.size, self.size)
+        pygame.draw.rect(surf, self.color, rect, border_radius=6)
+        pygame.draw.rect(surf, (255, 255, 255), rect, width=2, border_radius=6)
+
+blocks = [Block() for _ in range(8)]
+running = True
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            blocks.append(Block())
+
+    screen.fill((10, 12, 20))
+    for b in blocks:
+        b.update()
+        b.draw(screen)
+
+    font = pygame.font.SysFont("Segoe UI", 20)
+    info = font.render(f"Blocks: {len(blocks)} | Click to add | ESC to exit", True, (0, 243, 255))
+    screen.blit(info, (15, 15))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()
+'''
+            filename = "bouncing_block_extreme.py"
+
         # A. FLAPPY BIRD GAME (HTML5 Canvas Game)
-        if "flappy" in idea_lower or ("bird" in idea_lower and "game" in idea_lower):
+        elif "flappy" in idea_lower or ("bird" in idea_lower and "game" in idea_lower):
             code = """<!DOCTYPE html>
 <html lang="en">
 <head>

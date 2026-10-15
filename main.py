@@ -76,6 +76,13 @@ from voice.banner import print_tech_banner
 # Display large creative tech ASCII logo banner
 print_tech_banner()
 
+try:
+    import threading
+    from core.llamafile_manager import ensure_llamafile_server_running
+    threading.Thread(target=ensure_llamafile_server_running, daemon=True).start()
+except Exception as e:
+    pass
+
 greeting = get_random_greeting()
 speak(greeting)
 

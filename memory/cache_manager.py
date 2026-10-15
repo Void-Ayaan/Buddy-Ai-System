@@ -11,7 +11,11 @@ INTRO_PATTERNS = [
     "i am online and ready to help",
     "warming up",
     "status code",
-    "error"
+    "error",
+    "i understand, boss",
+    "saved this context",
+    "how would you like us to proceed",
+    "executing protocol"
 ]
 
 def normalize_query(query):
@@ -38,6 +42,10 @@ def is_generic_intro(text):
 
 def get_cached_response(query):
     key = normalize_query(query)
+    # Only allow caching for strict simple static greetings, never dynamic conversational reasoning
+    if key not in ["hello", "hi", "hey", "who are you"]:
+        return None
+
     cache = load_cache()
     if key in cache:
         res = cache[key]
@@ -48,7 +56,10 @@ def get_cached_response(query):
 def save_cached_response(query, response):
     key = normalize_query(query)
 
-    # Never cache errors, warming up messages, or generic intro responses!
+    # Never cache dynamic answers, errors, fallbacks, or conversational turns
+    if key not in ["hello", "hi", "hey", "who are you"]:
+        return
+
     if not response or is_generic_intro(response) or any(p in response.lower() for p in ["opening", "closed", "minimized"]):
         return
 
