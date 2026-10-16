@@ -3,7 +3,7 @@ import logging
 from core.llm import build_chat_messages, query_local_openai_compatible, clean_ascii_text
 from core.tool_registry import select_candidate_tools, execute_registered_tool
 
-def execute_model_tool_calling(user_input, max_tokens=256, temperature=0.1, timeout=60):
+def execute_model_tool_calling(user_input, max_tokens=512, temperature=0.1, timeout=90):
     """
     Native LLM Function Calling & ReAct Tool Loop:
     1. Sends conversation history + user query + candidate tool JSON schemas to Qwen3.
@@ -25,7 +25,8 @@ def execute_model_tool_calling(user_input, max_tokens=256, temperature=0.1, time
             tools=tools,
             max_tokens=max_tokens,
             temperature=temperature,
-            timeout=timeout
+            timeout=timeout,
+            chat_template_kwargs={"enable_thinking": False}
         )
     except Exception as e:
         logging.warning(f"[ToolCalling] Model request failed: {e}")

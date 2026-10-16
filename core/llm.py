@@ -25,7 +25,7 @@ def clean_ascii_text(text):
     clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
     return " ".join(clean.split())
 
-def query_local_openai_compatible(messages, tools=None, max_tokens=150, temperature=0.7, timeout=60, auto_spawn=True):
+def query_local_openai_compatible(messages, tools=None, tool_choice=None, max_tokens=512, temperature=0.2, timeout=90, auto_spawn=True, chat_template_kwargs=None):
     """
     Query local OpenAI-compatible server (llamafile on 8080, LM Studio on 1234).
     Supports multi-turn messages array, streaming/non-streaming, and native tool calling.
@@ -41,6 +41,10 @@ def query_local_openai_compatible(messages, tools=None, max_tokens=150, temperat
     }
     if tools:
         payload["tools"] = tools
+    if tool_choice:
+        payload["tool_choice"] = tool_choice
+    if chat_template_kwargs is not None:
+        payload["chat_template_kwargs"] = chat_template_kwargs
 
     data = json.dumps(payload).encode('utf-8')
 
@@ -201,8 +205,18 @@ def ask_ai(prompt, tools=None, auto_spawn=True):
         except Exception:
             tools = None
 
-    # Query local model with 60s timeout and 150 max_tokens for prompt CPU completion
-    message_obj = query_local_openai_compatible(messages, tools=tools, max_tokens=150, temperature=0.7, timeout=60, auto_spawn=auto_spawn)
+    # For tool calls, allow 512 tokens; for conversational, 150 tokens. Always disable thinking mode for fast sub-30s CPU response.
+    token_budget = 512 if tools else 150
+    chat_kwargs = {"enable_thinking": False}
+    message_obj = query_local_openai_compatible(
+        messages,
+        tools=tools,
+        max_tokens=token_budget,
+        temperature=0.2,
+        timeout=90,
+        auto_spawn=auto_spawn,
+        chat_template_kwargs=chat_kwargs
+    )
     if message_obj:
         tool_calls = message_obj.get("tool_calls")
         if tool_calls:

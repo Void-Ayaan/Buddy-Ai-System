@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 
 # Import all tool functions for JSON schema dispatch
 from tools.system_booster import run_turbo_boost, toggle_battery_saver
@@ -320,7 +321,7 @@ def select_candidate_tools(query):
     selected_names = []
 
     for keywords, tool_list in SPECIFIC_INTENTS:
-        if any(k in q_lower for k in keywords):
+        if any(bool(re.search(r'\b' + re.escape(k) + r'\b', q_lower)) if any(c.isalnum() for c in k) else k in q_lower for k in keywords):
             for t_name in tool_list:
                 if t_name not in selected_names and t_name in TOOL_REGISTRY:
                     selected_names.append(t_name)

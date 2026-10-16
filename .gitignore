@@ -24,6 +24,15 @@ __pycache__/
 # Temporary Files & Camera Snapshots
 memory/camera_view.jpg
 ui/camera_view.jpg
+memory/session_history.json
+memory/cache.json
+memory/learned_knowledge.json
+memory/profile.json
+memory/notes.json
+memory/*.json
+help.txt
+gguf_meta.txt
+*.zip
 scratch/
 *.log
 *.tmp
