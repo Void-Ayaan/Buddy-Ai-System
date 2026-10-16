@@ -3,6 +3,9 @@ llamafile.exe
 *.exe
 models/*.gguf
 models/*.bin
+models/*.safetensors
+models/*.onnx
+models/*.pt
 *.gguf
 
 # Python Virtual Environments

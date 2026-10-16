@@ -25,14 +25,14 @@ def clean_ascii_text(text):
     clean = re.sub(r'[^\x00-\x7F]+', ' ', clean)
     return " ".join(clean.split())
 
-def query_local_openai_compatible(messages, tools=None, max_tokens=256, temperature=0.7, timeout=60):
+def query_local_openai_compatible(messages, tools=None, max_tokens=150, temperature=0.7, timeout=60, auto_spawn=True):
     """
     Query local OpenAI-compatible server (llamafile on 8080, LM Studio on 1234).
     Supports multi-turn messages array, streaming/non-streaming, and native tool calling.
     Exceptions are properly logged instead of silently swallowed.
     """
-    # Ensure llamafile server is running if port 8080 is targeted
-    ensure_llamafile_server_running()
+    if auto_spawn:
+        ensure_llamafile_server_running()
 
     payload = {
         "messages": messages,
@@ -143,6 +143,12 @@ def web_search_knowledge_synthesis(prompt):
 
     return None
 
+SYSTEM_PROMPT = (
+    "You are Buddy, a fast, responsive, and intelligent AI desktop assistant. "
+    "If tools are provided that fulfill the user's action or task, call the appropriate tool function directly. "
+    "Keep answers direct, natural, and helpful without verbose internal monologue or unnecessary preamble."
+)
+
 def build_chat_messages(user_prompt, system_prompt=SYSTEM_PROMPT):
     """Assemble conversation history into standard OpenAI messages array."""
     messages = [{"role": "system", "content": system_prompt}]
@@ -162,12 +168,12 @@ def build_chat_messages(user_prompt, system_prompt=SYSTEM_PROMPT):
     messages.append({"role": "user", "content": user_prompt})
     return messages
 
-def ask_ai(prompt, tools=None):
+def ask_ai(prompt, tools=None, auto_spawn=True):
     """
     Main conversational AI entry point:
     1. Feeds prompt with multi-turn conversation history to Qwen3 local model.
     2. Falls back to explicit web search only if user explicitly asks for web/wikipedia.
-    3. Never intercepts with canned substring triggers.
+    3. Returns honest transparent diagnostic status if local model server is unreachable.
     """
     if not prompt or not prompt.strip():
         return "How can I assist you today, Boss?"
@@ -195,8 +201,8 @@ def ask_ai(prompt, tools=None):
         except Exception:
             tools = None
 
-    # Query local model with 90s timeout and 150 max_tokens for prompt CPU completion
-    message_obj = query_local_openai_compatible(messages, tools=tools, max_tokens=150, temperature=0.7, timeout=90)
+    # Query local model with 60s timeout and 150 max_tokens for prompt CPU completion
+    message_obj = query_local_openai_compatible(messages, tools=tools, max_tokens=150, temperature=0.7, timeout=60, auto_spawn=auto_spawn)
     if message_obj:
         tool_calls = message_obj.get("tool_calls")
         if tool_calls:
@@ -233,5 +239,6 @@ def ask_ai(prompt, tools=None):
         if fallback_search:
             return fallback_search
 
-    return "I am processing your request, Boss! All local agent nodes are active."
+    # Transparent, non-template fallback when model is unreachable
+    return "[Offline Mode] Local model engine (llamafile) is not reachable on port 8080. Start the model server via launch_hud.bat or run 'python main.py' to enable conversational reasoning."
 

@@ -22,8 +22,11 @@ from tools.dictionary_tools import get_word_definition
 from tools.weather_tools import get_weather
 from tools.news_tools import get_latest_news
 from tools.notes_tools import add_note, get_notes, clear_notes
-from tools.system_tools import open_app
+from tools.system_tools import open_app, open_chrome
 from tools.reminder_tools import parse_timer_command
+from tools.screen_tools import take_screenshot
+from tools.process_tools import get_system_uptime
+from tools.spec_tools import get_hardware_specs
 
 def _code_agent_dispatch(args):
     from agents.coding_agent import CodingAgent
@@ -221,6 +224,26 @@ TOOL_REGISTRY = {
             "required": ["prompt"]
         },
         "func": lambda args: parse_timer_command(args.get("prompt", "25 minutes"))
+    },
+    "take_screenshot": {
+        "description": "Take and save a screenshot of the current computer screen",
+        "parameters": {"type": "object", "properties": {}},
+        "func": lambda args: take_screenshot()
+    },
+    "get_system_uptime": {
+        "description": "Get current operating system uptime since last boot",
+        "parameters": {"type": "object", "properties": {}},
+        "func": lambda args: get_system_uptime()
+    },
+    "get_hardware_specs": {
+        "description": "Get CPU, RAM, disk, and GPU hardware system specifications",
+        "parameters": {"type": "object", "properties": {}},
+        "func": lambda args: get_hardware_specs()
+    },
+    "open_chrome": {
+        "description": "Launch Google Chrome web browser",
+        "parameters": {"type": "object", "properties": {}},
+        "func": lambda args: open_chrome()
     }
 }
 
@@ -239,9 +262,16 @@ def get_openai_tool_schemas():
     return tools
 
 def execute_registered_tool(tool_name, args=None):
-    """Execute a registered tool by name with arguments."""
+    """Execute a registered tool by name with arguments and semantic aliases."""
     if args is None:
         args = {}
+    
+    # Semantic alias handling
+    if tool_name == "open_app":
+        app_name = str(args.get("app_name", "")).lower().strip()
+        if "chrome" in app_name:
+            return open_chrome()
+
     tool = TOOL_REGISTRY.get(tool_name)
     if not tool:
         return f"Tool '{tool_name}' not found in registry."
@@ -250,42 +280,60 @@ def execute_registered_tool(tool_name, args=None):
     except Exception as e:
         return f"Tool execution error for '{tool_name}': {e}"
 
-TOOL_INTENT_KEYWORDS = {
-    "system": ["boost", "ram", "memory", "slow", "speed up", "temp", "cache", "junk", "kill", "close all", "terminate", "lock", "sleep", "minimize"],
-    "coding": ["code", "script", "program", "game", "python", "pygame", "flappy", "snake", "bounce", "animation", "prompt", "last saved"],
-    "network": ["weather", "forecast", "temperature", "news", "ping", "website", "online", "speed test", "network speed", "internet speed"],
-    "utility": ["open", "launch", "timer", "alarm", "remind", "note", "notes", "volume", "sound", "mute", "unmute", "calc", "calculate", "math"]
-}
-
-CATEGORY_TOOLS = {
-    "system": ["turbo_boost", "optimize_ram", "clean_temp", "kill_all_processes", "kill_named_process", "lock_pc", "sleep_pc", "minimize_all_windows"],
-    "coding": ["code_agent", "save_code_to_desktop", "locate_last_saved_file", "make_master_prompt"],
-    "network": ["get_weather", "get_top_news", "check_ping", "check_website", "run_speed_test"],
-    "utility": ["open_app", "set_timer", "add_note", "get_notes", "volume_up", "volume_down", "toggle_mute", "evaluate_math"]
-}
+# Fine-grained intent mapping: maps specific phrases to 1-2 exact tools
+SPECIFIC_INTENTS = [
+    (["screenshot", "capture screen", "snapshot"], ["take_screenshot"]),
+    (["uptime", "how long has the pc been on", "how long on"], ["get_system_uptime"]),
+    (["spec", "specs", "hardware", "cpu info", "gpu info", "system info"], ["get_hardware_specs"]),
+    (["chrome", "google chrome"], ["open_chrome", "open_app"]),
+    (["weather", "forecast", "temperature", "rain", "sunny", "climate"], ["get_weather"]),
+    (["timer", "alarm", "remind", "stopwatch"], ["set_timer"]),
+    (["calculate", "calc", "math", "plus", "minus", "multiplied by", "divided by", "solve", "*", "+", "/"], ["evaluate_math"]),
+    (["ram", "memory headroom", "clean ram", "optimize memory"], ["optimize_ram"]),
+    (["boost", "turbo", "speed up my pc"], ["turbo_boost"]),
+    (["clean temp", "clear junk", "temp files"], ["clean_temp"]),
+    (["kill process", "terminate task", "close app"], ["kill_named_process"]),
+    (["lock pc", "lock computer", "lock screen"], ["lock_pc"]),
+    (["sleep pc", "put to sleep"], ["sleep_pc"]),
+    (["minimize all", "show desktop"], ["minimize_all_windows"]),
+    (["news", "headlines", "latest news"], ["get_top_news"]),
+    (["ping", "latency"], ["check_ping"]),
+    (["speed test", "network speed", "internet speed"], ["run_speed_test"]),
+    (["volume up", "louder", "increase volume"], ["volume_up"]),
+    (["volume down", "quieter", "lower volume"], ["volume_down"]),
+    (["mute", "unmute", "silence"], ["toggle_mute"]),
+    (["note", "notes", "remember to"], ["add_note", "get_notes"]),
+    (["vs code", "vscode", "code editor", "open code", "open editor", "open app", "launch"], ["open_app"]),
+    (["code a", "write code", "create script", "build a game", "pygame", "python script"], ["code_agent", "locate_last_saved_file"])
+]
 
 def select_candidate_tools(query):
     """
-    Intelligently select relevant tool schemas based on user intent keywords.
-    Keeps prompt concise (<200 tokens) so CPU prompt evaluation finishes in 2-4 seconds.
+    Intelligently select 1-3 relevant tool schemas based on specific user intent.
+    Keeps prompt concise (<100 tokens) so CPU prompt evaluation completes in 1-2 seconds.
     If purely conversational or knowledge question, returns empty list so model responds directly.
     """
     if not query:
         return []
 
     q_lower = query.lower()
-    selected_names = set()
+    selected_names = []
 
-    for category, keywords in TOOL_INTENT_KEYWORDS.items():
+    for keywords, tool_list in SPECIFIC_INTENTS:
         if any(k in q_lower for k in keywords):
-            for t_name in CATEGORY_TOOLS[category]:
-                selected_names.add(t_name)
+            for t_name in tool_list:
+                if t_name not in selected_names and t_name in TOOL_REGISTRY:
+                    selected_names.append(t_name)
+                    if len(selected_names) >= 3:
+                        break
+        if len(selected_names) >= 3:
+            break
 
     if not selected_names:
         return []
 
     tools = []
-    for name in selected_names:
+    for name in selected_names[:3]:
         item = TOOL_REGISTRY.get(name)
         if item:
             tools.append({
@@ -297,4 +345,5 @@ def select_candidate_tools(query):
                 }
             })
     return tools
+
 

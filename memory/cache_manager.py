@@ -2,7 +2,11 @@ import json
 import os
 import re
 
-CACHE_FILE = "memory/cache.json"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CACHE_FILE = os.path.join(BASE_DIR, "memory", "cache.json")
+
+# Strict exact static greetings ONLY. Never cache compound questions or dynamic queries.
+ALLOWED_CACHE_KEYS = {"hello", "hi", "hey"}
 
 INTRO_PATTERNS = [
     "i am buddy",
@@ -43,7 +47,7 @@ def is_generic_intro(text):
 def get_cached_response(query):
     key = normalize_query(query)
     # Only allow caching for strict simple static greetings, never dynamic conversational reasoning
-    if key not in ["hello", "hi", "hey", "who are you"]:
+    if key not in ALLOWED_CACHE_KEYS:
         return None
 
     cache = load_cache()
@@ -57,7 +61,7 @@ def save_cached_response(query, response):
     key = normalize_query(query)
 
     # Never cache dynamic answers, errors, fallbacks, or conversational turns
-    if key not in ["hello", "hi", "hey", "who are you"]:
+    if key not in ALLOWED_CACHE_KEYS:
         return
 
     if not response or is_generic_intro(response) or any(p in response.lower() for p in ["opening", "closed", "minimized"]):

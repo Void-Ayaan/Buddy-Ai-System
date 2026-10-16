@@ -7,9 +7,9 @@ import logging
 
 LLAMAFILE_PORT = 8080
 LLAMAFILE_HOST = "127.0.0.1"
-MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
-DEFAULT_GGUF = os.path.join(MODELS_DIR, "Qwen3-1.7B-Q4_K_M.gguf")
-LLAMAFILE_EXE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "llamafile.exe")
+MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"))
+DEFAULT_GGUF = os.path.abspath(os.path.join(MODELS_DIR, "Qwen3-1.7B-Q4_K_M.gguf"))
+LLAMAFILE_EXE = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "llamafile.exe"))
 
 _server_process = None
 
@@ -23,14 +23,19 @@ def is_llamafile_server_running(port=LLAMAFILE_PORT, timeout=1.5):
     except Exception:
         return False
 
-def ensure_llamafile_server_running(model_path=DEFAULT_GGUF, port=LLAMAFILE_PORT, max_wait=30):
+def ensure_llamafile_server_running(model_path=DEFAULT_GGUF, port=LLAMAFILE_PORT, max_wait=60):
     """
     Ensure the llamafile server is running with the specified GGUF model.
     If not already running, spawns llamafile.exe as a background daemon.
     """
     global _server_process
 
+    # Print fully resolved paths for complete transparency
+    print(f"[Model Engine] Resolved binary path: {LLAMAFILE_EXE}")
+    print(f"[Model Engine] Resolved GGUF path:   {model_path}")
+
     if is_llamafile_server_running(port=port):
+        print(f"[Model Engine] Llamafile server already active on port {port}.")
         return True
 
     if not os.path.exists(LLAMAFILE_EXE):
@@ -49,8 +54,7 @@ def ensure_llamafile_server_running(model_path=DEFAULT_GGUF, port=LLAMAFILE_PORT
         "--server",
         "--port", str(port),
         "--host", LLAMAFILE_HOST,
-        "-c", "2048",
-        "--reasoning", "off"
+        "-c", "2048"
     ]
 
     try:
