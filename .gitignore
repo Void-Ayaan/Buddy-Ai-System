@@ -29,11 +29,17 @@ memory/cache.json
 memory/learned_knowledge.json
 memory/profile.json
 memory/notes.json
+memory/proactive_log.json
+memory/proactive_state.json
+memory/proactive_scheduler.lock
+memory/proactive_secret.txt
+memory/hud_port.txt
 memory/*.json
 help.txt
 gguf_meta.txt
 *.zip
 scratch/
+patches/
 *.log
 *.tmp
 
