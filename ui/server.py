@@ -86,6 +86,7 @@ from voice.listener import listen_from_microphone
 set_web_mode(True)
 
 PORT = 5000
+ACTUAL_BOUND_PORT = None
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def open_standalone_app_window(url):
@@ -99,6 +100,30 @@ def open_standalone_app_window(url):
             import webbrowser
             webbrowser.open(url)
 
+_pending_proactive_msgs = []
+_proactive_queue_lock = threading.Lock()
+MAX_PENDING_PROACTIVE_MSGS = 20
+
+def broadcast_proactive_message(text):
+    with _proactive_queue_lock:
+        _pending_proactive_msgs.append(text)
+        if len(_pending_proactive_msgs) > MAX_PENDING_PROACTIVE_MSGS:
+            _pending_proactive_msgs.pop(0)
+
+def pop_proactive_messages():
+    with _proactive_queue_lock:
+        if not _pending_proactive_msgs:
+            return []
+        msgs = list(_pending_proactive_msgs)
+        _pending_proactive_msgs.clear()
+        return msgs
+
+try:
+    from core.proactive import register_hud_broadcaster
+    register_hud_broadcaster(broadcast_proactive_message)
+except Exception:
+    pass
+
 def get_telemetry_json():
     try:
         cpu = int(psutil.cpu_percent(interval=0.1))
@@ -107,12 +132,19 @@ def get_telemetry_json():
         bat_val = int(battery.percent) if battery else 100
         mood = get_current_emotion()["badge"]
         swarm_data = swarm.get_real_swarm_telemetry()
+        pro_enabled = False
+        try:
+            from core.proactive import load_proactive_state
+            pro_enabled = load_proactive_state().get("enabled", False)
+        except Exception:
+            pass
         return {
             "cpu": cpu,
             "ram": ram,
             "battery": bat_val,
             "mood": mood,
-            "swarm": swarm_data
+            "swarm": swarm_data,
+            "proactive_enabled": pro_enabled
         }
     except Exception:
         return {
@@ -120,10 +152,29 @@ def get_telemetry_json():
             "ram": 42,
             "battery": 90,
             "mood": "[ Mood: Loyal Assistant (o7) ]",
-            "swarm": swarm.get_real_swarm_telemetry()
+            "swarm": swarm.get_real_swarm_telemetry(),
+            "proactive_enabled": False
         }
 
 def execute_command_string(user_input):
+    try:
+        from core.proactive import notify_user_request_arrived, check_mute_phrase, set_proactive_enabled, MODEL_LOCK
+        notify_user_request_arrived()
+
+        cmd_clean = user_input.strip().lower()
+        if cmd_clean in ["proactive on", "enable proactive"]:
+            set_proactive_enabled(True)
+            return "Proactive speaking mode enabled, Boss.", False
+        elif cmd_clean in ["proactive off", "disable proactive"]:
+            set_proactive_enabled(False)
+            return "Proactive speaking mode disabled, Boss.", False
+
+        mute_res = check_mute_phrase(user_input)
+        if mute_res:
+            return mute_res, False
+    except Exception:
+        pass
+
     mood = detect_emotion_from_input(user_input)
     pipeline_type, action, payload = process_query_pipeline(user_input)
 
@@ -133,7 +184,16 @@ def execute_command_string(user_input):
 
     if pipeline_type == PIPELINE_REACT:
         from core.react_engine import react_engine
-        result = react_engine.execute_react_loop(user_input)
+        try:
+            from core.proactive import MODEL_LOCK, mark_user_request_waiting
+            mark_user_request_waiting(True)
+            try:
+                with MODEL_LOCK:
+                    result = react_engine.execute_react_loop(user_input)
+            finally:
+                mark_user_request_waiting(False)
+        except Exception:
+            result = react_engine.execute_react_loop(user_input)
         return result, should_compact
 
     if pipeline_type == PIPELINE_ACTION:
@@ -346,7 +406,16 @@ def execute_command_string(user_input):
         if cached_response:
             result = cached_response
         else:
-            result = ask_ai(user_input)
+            try:
+                from core.proactive import MODEL_LOCK, mark_user_request_waiting
+                mark_user_request_waiting(True)
+                try:
+                    with MODEL_LOCK:
+                        result = ask_ai(user_input)
+                finally:
+                    mark_user_request_waiting(False)
+            except Exception:
+                result = ask_ai(user_input)
             save_cached_response(user_input, result)
 
     try:
@@ -379,6 +448,9 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 while True:
                     telemetry = get_telemetry_json()
+                    p_msgs = pop_proactive_messages()
+                    if p_msgs:
+                        telemetry["proactive_messages"] = p_msgs
                     data_str = f"data: {json.dumps(telemetry)}\n\n"
                     self.wfile.write(data_str.encode("utf-8"))
                     self.wfile.flush()
@@ -456,6 +528,40 @@ class CyberHUDHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(response).encode("utf-8"))
 
+        elif self.path == "/api/proactive/toggle":
+            from core.proactive import load_proactive_state, set_proactive_enabled
+            cur = load_proactive_state().get("enabled", False)
+            new_val = set_proactive_enabled(not cur)
+            resp = {"enabled": new_val}
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+
+        elif self.path == "/api/proactive/message":
+            from core.proactive import get_or_create_proactive_secret
+            expected_secret = get_or_create_proactive_secret()
+            provided_secret = self.headers.get("X-Buddy-Secret")
+
+            if not provided_secret or provided_secret != expected_secret:
+                self.send_response(403)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "forbidden", "reason": "invalid_secret"}).encode("utf-8"))
+                return
+
+            try:
+                data = json.loads(post_data) if post_data else {}
+                msg = data.get("message") or data.get("text", "")
+            except Exception:
+                msg = post_data.strip() if post_data else ""
+            if msg:
+                broadcast_proactive_message(msg)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "ok", "delivered": bool(msg)}).encode("utf-8"))
+
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
     daemon_threads = True
@@ -476,6 +582,20 @@ def start_ui_server():
         server = ThreadedTCPServer(("127.0.0.1", PORT), CyberHUDHandler)
         target_port = PORT
 
+    ACTUAL_BOUND_PORT = target_port
+    try:
+        from core.proactive import set_hud_port
+        set_hud_port(target_port)
+    except Exception:
+        pass
+    try:
+        hud_port_file = os.path.join(BASE_DIR, "memory", "hud_port.txt")
+        os.makedirs(os.path.dirname(hud_port_file), exist_ok=True)
+        with open(hud_port_file, "w", encoding="utf-8") as f:
+            f.write(str(target_port))
+    except Exception:
+        pass
+
     print(f"\n[ BUDDY CYBER HUD RUNNING AT http://127.0.0.1:{target_port} ]\n")
     try:
         from core.llamafile_manager import ensure_llamafile_server_running
@@ -483,6 +603,11 @@ def start_ui_server():
     except Exception as e:
         print(f"[Warning] Failed to pre-warm LLM daemon: {e}")
     start_auto_upgrader_background_daemon()
+    try:
+        from core.proactive import start_proactive_scheduler
+        start_proactive_scheduler()
+    except Exception as e:
+        print(f"[Warning] Failed to start proactive scheduler: {e}")
     open_standalone_app_window(f"http://127.0.0.1:{target_port}")
     server.serve_forever()
 

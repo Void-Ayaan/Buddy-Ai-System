@@ -504,6 +504,7 @@
             </div>
 
             <button class="dock-toggle-btn" id="dockBtn" onclick="toggleCompactMode()">[ 🗖 CORNER WIDGET ]</button>
+            <button class="dock-toggle-btn" id="proactiveToggleBtn" onclick="toggleProactiveMode()">[ PROACTIVE: OFF ]</button>
 
             <div class="theme-btn-group">
                 <div class="theme-dot" style="background:#00f3ff;" onclick="setTheme('')" title="Cyber Cyan"></div>
@@ -1055,7 +1056,14 @@
                 source.onmessage = function(e) {
                     try {
                         const telemetry = JSON.parse(e.data);
-                        if (telemetry) updateTelemetry(telemetry);
+                        if (telemetry) {
+                            updateTelemetry(telemetry);
+                            if (telemetry.proactive_messages && telemetry.proactive_messages.length > 0) {
+                                for (const pmsg of telemetry.proactive_messages) {
+                                    speakAndTypeBuddyLog(pmsg);
+                                }
+                            }
+                        }
                     } catch (err) {}
                 };
                 source.onerror = function(err) {
@@ -1127,6 +1135,30 @@
                 if (connEl) {
                     connEl.textContent = `${stats.swarm.connection.from} -> ${stats.swarm.connection.to}`;
                 }
+            }
+
+            if (stats.proactive_enabled !== undefined) {
+                updateProactiveUI(stats.proactive_enabled);
+            }
+        }
+
+        function toggleProactiveMode() {
+            fetch('/api/proactive/toggle', {method: 'POST'})
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.enabled !== undefined) {
+                    updateProactiveUI(data.enabled);
+                }
+            })
+            .catch(() => {});
+        }
+
+        function updateProactiveUI(enabled) {
+            const btn = document.getElementById('proactiveToggleBtn');
+            if (btn) {
+                btn.textContent = enabled ? '[ PROACTIVE: ON ]' : '[ PROACTIVE: OFF ]';
+                btn.style.borderColor = enabled ? 'var(--cyan-core)' : 'rgba(255, 75, 75, 0.6)';
+                btn.style.color = enabled ? 'var(--cyan-core)' : '#ff6666';
             }
         }
 

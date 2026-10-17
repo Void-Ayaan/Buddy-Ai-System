@@ -1,3 +1,4 @@
+import os
 from core.pipeline import process_query_pipeline, PIPELINE_ACTION, PIPELINE_QUESTION
 from core.self_upgrader import self_upgrade
 from core.emotions import detect_emotion_from_input, get_current_emotion, format_emotional_response
@@ -75,12 +76,19 @@ from voice.banner import print_tech_banner
 
 # Display large creative tech ASCII logo banner
 print_tech_banner()
+print(f"[ BUDDY MAIN SYSTEM RUNNING | PID: {os.getpid()} ]\n", flush=True)
 
 try:
     import threading
     from core.llamafile_manager import ensure_llamafile_server_running
     threading.Thread(target=ensure_llamafile_server_running, daemon=True).start()
 except Exception as e:
+    pass
+
+try:
+    from core.proactive import start_proactive_scheduler
+    start_proactive_scheduler()
+except Exception:
     pass
 
 greeting = get_random_greeting()
@@ -98,6 +106,40 @@ while True:
         user_input = listen_from_microphone(timeout=4)
         if not user_input:
             continue
+
+    # Track activity and handle proactive controls before model
+    try:
+        from core.proactive import notify_user_request_arrived, check_mute_phrase, set_proactive_enabled, load_proactive_state
+        notify_user_request_arrived()
+
+        cmd_clean = user_input.strip().lower()
+        if cmd_clean in ["proactive on", "enable proactive"]:
+            set_proactive_enabled(True)
+            msg = "Proactive speaking mode enabled, Boss."
+            print(f"\nBuddy: {msg}\n")
+            speak(msg)
+            continue
+        elif cmd_clean in ["proactive off", "disable proactive"]:
+            set_proactive_enabled(False)
+            msg = "Proactive speaking mode disabled, Boss."
+            print(f"\nBuddy: {msg}\n")
+            speak(msg)
+            continue
+        elif cmd_clean in ["proactive toggle", "toggle proactive"]:
+            curr = load_proactive_state().get("enabled", False)
+            new_s = set_proactive_enabled(not curr)
+            msg = f"Proactive mode is now {'enabled' if new_s else 'disabled'}, Boss."
+            print(f"\nBuddy: {msg}\n")
+            speak(msg)
+            continue
+
+        mute_ack = check_mute_phrase(user_input)
+        if mute_ack:
+            print(f"\nBuddy: {mute_ack}\n")
+            speak(mute_ack)
+            continue
+    except Exception:
+        pass
 
     # Dynamically update Buddy's emotional mood based on user input
     mood = detect_emotion_from_input(user_input)
@@ -287,7 +329,16 @@ while True:
             speak(cached_response)
         else:
             with ThinkingAnimation("Buddy is thinking..."):
-                response = ask_ai(user_input)
+                try:
+                    from core.proactive import MODEL_LOCK, mark_user_request_waiting
+                    mark_user_request_waiting(True)
+                    try:
+                        with MODEL_LOCK:
+                            response = ask_ai(user_input)
+                    finally:
+                        mark_user_request_waiting(False)
+                except Exception:
+                    response = ask_ai(user_input)
 
             save_cached_response(user_input, response)
             format_emotional_response(response)
